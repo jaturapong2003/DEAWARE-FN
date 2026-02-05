@@ -1,14 +1,18 @@
 import Keycloak from 'keycloak-js';
 
-// Keycloak Configuration
-// TODO: Update the URL to match your Keycloak server
+// Key environments config.
+const url = import.meta.env.KEYCLOAK_URL;
+const realm = import.meta.env.REALM;
+const clientId = import.meta.env.KEYCLOAK_URL;
+
+// Keycloak Configuration.
 const keycloakConfig = {
-  url: 'http://100.118.228.20:8081',   // Keycloak server URL
-  realm: 'DEAWARE',                     // Your realm name
-  clientId: 'DEAWARE',                  // Your client ID
+  url: url || 'http://localhost:8080',
+  realm: realm || 'your-realm',
+  clientId: clientId || 'your-client-id',
 };
 
-// Create Keycloak instance
+// Create Keycloak instance.
 const keycloak = new Keycloak(keycloakConfig);
 
 export default keycloak;
