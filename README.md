@@ -1,73 +1,244 @@
-# React + TypeScript + Vite
+# DEAWARE-FN
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+โปรเจค Frontend สำหรับระบบ DEAWARE ที่พัฒนาด้วย React + TypeScript + Vite
 
-Currently, two official plugins are available:
+## 📋 สารบัญ
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- [ข้อกำหนดเบื้องต้น](#ข้อกำหนดเบื้องต้น)
+- [การติดตั้ง](#การติดตั้ง)
+- [การตั้งค่าโปรเจค](#การตั้งค่าโปรเจค)
+- [การรันโปรเจค](#การรันโปรเจค)
+- [คำสั่งที่ใช้งาน](#คำสั่งที่ใช้งาน)
+- [เทคโนโลยีที่ใช้](#เทคโนโลยีที่ใช้)
+- [โครงสร้างโปรเจค](#โครงสร้างโปรเจค)
 
-## React Compiler
+## 🔧 ข้อกำหนดเบื้องต้น
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+ก่อนเริ่มติดตั้งโปรเจค กรุณาตรวจสอบให้แน่ใจว่าคุณได้ติดตั้งโปรแกรมต่อไปนี้แล้ว:
 
-## Expanding the ESLint configuration
+- **Node.js** (เวอร์ชัน 18.0 หรือสูงกว่า)
+- **npm** (เวอร์ชัน 9.0 หรือสูงกว่า) หรือ **Bun** (แนะนำ)
+- **Git** สำหรับการจัดการ version control
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### ตรวจสอบเวอร์ชัน
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```bash
+node --version
+npm --version
+# หรือ
+bun --version
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 📦 การติดตั้ง
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x';
-import reactDom from 'eslint-plugin-react-dom';
+### 1. Clone โปรเจค
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```bash
+git clone <repository-url>
+cd DEAWARE-FN
 ```
+
+### 2. ติดตั้ง Dependencies
+
+#### ใช้ npm:
+
+```bash
+npm install
+```
+
+#### ใช้ Bun (แนะนำ):
+
+```bash
+bun install
+```
+
+## ⚙️ การตั้งค่าโปรเจค
+
+### 1. สร้างไฟล์ Environment Variables
+
+สร้างไฟล์ `.env` ในโฟลเดอร์หลักของโปรเจค:
+
+```bash
+# สำหรับ Windows
+copy .env.example .env
+
+# สำหรับ macOS/Linux
+cp .env.example .env
+```
+
+หากไม่มีไฟล์ `.env.example` ให้สร้างไฟล์ `.env` ใหม่และเพิ่มค่าต่อไปนี้:
+
+```env
+KEYCLOAK_URL=http://localhost:8081
+REALM=DEAWARE
+CLINET_ID=DEAWARE
+```
+
+### 2. ปรับแต่งค่า Environment Variables
+
+แก้ไขไฟล์ `.env` ตามการตั้งค่าของคุณ:
+
+- **KEYCLOAK_URL**: URL ของ Keycloak server (ค่าเริ่มต้น: `http://localhost:8081`)
+- **REALM**: ชื่อ Realm ใน Keycloak (ค่าเริ่มต้น: `DEAWARE`)
+- **CLINET_ID**: Client ID ที่ลงทะเบียนใน Keycloak (ค่าเริ่มต้น: `DEAWARE`)
+
+> ⚠️ **หมายเหตุ**: ไฟล์ `.env` ถูกเพิ่มใน `.gitignore` แล้ว เพื่อป้องกันการ commit ข้อมูลที่เป็นความลับ
+
+## 🚀 การรันโปรเจค
+
+### Development Mode
+
+รันโปรเจคในโหมด development พร้อม Hot Module Replacement (HMR):
+
+#### ใช้ npm:
+
+```bash
+npm run dev
+```
+
+#### ใช้ Bun:
+
+```bash
+bun run dev
+```
+
+เปิดเบราว์เซอร์และไปที่: **http://localhost:5173**
+
+### Production Build
+
+สร้าง production build:
+
+#### ใช้ npm:
+
+```bash
+npm run build
+```
+
+#### ใช้ Bun:
+
+```bash
+bun run build
+```
+
+### Preview Production Build
+
+ดูตัวอย่าง production build ก่อนนำขึ้น production:
+
+#### ใช้ npm:
+
+```bash
+npm run preview
+```
+
+#### ใช้ Bun:
+
+```bash
+bun run preview
+```
+
+## 📝 คำสั่งที่ใช้งาน
+
+| คำสั่ง                 | คำอธิบาย                       |
+| ---------------------- | ------------------------------ |
+| `npm run dev`          | รันโปรเจคในโหมด development    |
+| `npm run build`        | สร้าง production build         |
+| `npm run lint`         | ตรวจสอบโค้ดด้วย ESLint         |
+| `npm run preview`      | ดูตัวอย่าง production build    |
+| `npm run format`       | จัดรูปแบบโค้ดด้วย Prettier     |
+| `npm run format:check` | ตรวจสอบรูปแบบโค้ดด้วย Prettier |
+
+## 🛠️ เทคโนโลยีที่ใช้
+
+### Core Technologies
+
+- **React 19.2.0** - JavaScript library สำหรับสร้าง UI
+- **TypeScript 5.9.3** - Typed superset ของ JavaScript
+- **Vite (Rolldown)** - Build tool และ dev server ที่รวดเร็ว
+
+### UI & Styling
+
+- **Tailwind CSS 4.1.18** - Utility-first CSS framework
+- **Radix UI** - Unstyled, accessible UI components
+- **Lucide React** - Icon library
+- **class-variance-authority** - สำหรับจัดการ CSS variants
+- **clsx** & **tailwind-merge** - สำหรับจัดการ className
+
+### Authentication
+
+- **Keycloak JS 26.2.3** - Client library สำหรับ Keycloak authentication
+
+### Routing
+
+- **React Router DOM 7.13.0** - Declarative routing สำหรับ React
+
+### Development Tools
+
+- **ESLint** - Linting tool สำหรับ JavaScript/TypeScript
+- **Prettier** - Code formatter
+- **TypeScript ESLint** - ESLint plugin สำหรับ TypeScript
+
+## 📁 โครงสร้างโปรเจค
+
+```
+DEAWARE-FN/
+├── public/              # Static assets
+├── src/
+│   ├── components/      # React components
+│   ├── pages/          # Page components
+│   ├── routes/         # Route configurations
+│   ├── fonts/          # Custom fonts
+│   ├── lib/            # Utility functions
+│   ├── hooks/          # Custom React hooks
+│   └── ...
+├── .env                # Environment variables (ไม่ commit)
+├── .gitignore          # Git ignore rules
+├── index.html          # HTML entry point
+├── package.json        # Project dependencies
+├── tsconfig.json       # TypeScript configuration
+├── vite.config.ts      # Vite configuration
+└── README.md           # เอกสารนี้
+```
+
+## 🔐 การตั้งค่า Keycloak
+
+โปรเจคนี้ใช้ Keycloak สำหรับการจัดการ authentication และ authorization
+
+### ขั้นตอนการตั้งค่า:
+
+1. ติดตั้งและรัน Keycloak server
+2. สร้าง Realm ชื่อ `DEAWARE` (หรือตามที่กำหนดใน `.env`)
+3. สร้าง Client ชื่อ `DEAWARE` (หรือตามที่กำหนดใน `.env`)
+4. ตั้งค่า Valid Redirect URIs: `http://localhost:5173/*`
+5. ตั้งค่า Web Origins: `http://localhost:5173`
+6. อัพเดทค่าใน `.env` ให้ตรงกับการตั้งค่าของคุณ
+
+## 🐛 การแก้ไขปัญหา
+
+### ปัญหา: โปรเจครันไม่ได้
+
+- ตรวจสอบว่าได้ติดตั้ง dependencies ครบถ้วนแล้ว (`npm install` หรือ `bun install`)
+- ตรวจสอบว่าไฟล์ `.env` มีค่าที่ถูกต้อง
+- ลบโฟลเดอร์ `node_modules` และ `dist` แล้วติดตั้งใหม่
+
+### ปัญหา: Keycloak authentication ไม่ทำงาน
+
+- ตรวจสอบว่า Keycloak server รันอยู่
+- ตรวจสอบค่า `KEYCLOAK_URL`, `REALM`, และ `CLINET_ID` ใน `.env`
+- ตรวจสอบ Redirect URIs ใน Keycloak client configuration
+
+### ปัญหา: Port 5173 ถูกใช้งานแล้ว
+
+- Vite จะเลือก port ถัดไปโดยอัตโนมัติ (5174, 5175, ...)
+- หรือสามารถกำหนด port เองใน `vite.config.ts`
+
+## 📄 License
+
+โปรเจคนี้เป็นส่วนหนึ่งของระบบ DEAWARE
+
+## 👥 ทีมพัฒนา
+
+พัฒนาโดยทีม DEAWARE Development Team
+
+---
+
+สำหรับข้อมูลเพิ่มเติมหรือการสนับสนุน กรุณาติดต่อทีมพัฒนา
