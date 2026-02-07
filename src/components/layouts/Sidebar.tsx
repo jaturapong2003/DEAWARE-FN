@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useKeycloak } from '@react-keycloak/web';
 import { SettingsIcon, LogOutIcon } from 'lucide-react';
 import {
   Sidebar,
@@ -27,6 +28,7 @@ const settingsItems = [
 
 const AppSidebar: React.FC = () => {
   const location = useLocation();
+  const { keycloak } = useKeycloak();
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -89,8 +91,7 @@ const AppSidebar: React.FC = () => {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => {
-                // TODO: Implement logout functionality
-                console.log('Logout clicked');
+                keycloak.logout({ redirectUri: window.location.origin });
               }}
               tooltip="Logout"
             >

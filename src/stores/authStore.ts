@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import keycloak from '../config/keycloak';
 
-// Types
+// Types - ประเภทข้อมูล
 interface UserProfile {
   id?: string;
   username?: string;
@@ -15,21 +15,21 @@ interface AuthState {
   isLoading: boolean;
   user: UserProfile | null;
   token: string | null;
-  // Actions
+  // Actions - ฟังก์ชัน
   login: () => void;
   logout: () => void;
   refreshToken: () => Promise<boolean>;
   initKeycloak: () => Promise<void>;
 }
 
-// Create Zustand Store
+// สร้าง Zustand Store สำหรับจัดการ Authentication
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: true,
   user: null,
   token: null,
 
-  // Initialize Keycloak
+  // เริ่มต้น Keycloak
   initKeycloak: async () => {
     try {
       const authenticated = await keycloak.init({
@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (authenticated) {
         set({ token: keycloak.token || null });
         
-        // Load user profile
+        // โหลดข้อมูลผู้ใช้
         try {
           const profile = await keycloak.loadUserProfile();
           set({
@@ -57,19 +57,19 @@ export const useAuthStore = create<AuthState>((set) => ({
             },
           });
         } catch (error) {
-          console.error('Failed to load user profile:', error);
+          console.error('ไม่สามารถโหลดข้อมูลผู้ใช้:', error);
         }
       }
 
-      // Setup event handlers
+      // ตั้งค่า event handlers
       keycloak.onTokenExpired = () => {
         keycloak.updateToken(30).then((refreshed) => {
           if (refreshed) {
             set({ token: keycloak.token || null });
-            console.log('Token refreshed');
+            console.log('รีเฟรช Token สำเร็จ');
           }
         }).catch(() => {
-          console.error('Failed to refresh token');
+          console.error('รีเฟรช Token ไม่สำเร็จ');
           set({ isAuthenticated: false, user: null, token: null });
         });
       };
@@ -88,7 +88,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             },
           });
         } catch (error) {
-          console.error('Failed to load user profile:', error);
+          console.error('ไม่สามารถโหลดข้อมูลผู้ใช้:', error);
         }
       };
 
@@ -97,26 +97,26 @@ export const useAuthStore = create<AuthState>((set) => ({
       };
 
     } catch (error) {
-      console.error('Keycloak initialization failed:', error);
+      console.error('เริ่มต้น Keycloak ไม่สำเร็จ:', error);
       set({ isAuthenticated: false });
     } finally {
       set({ isLoading: false });
     }
   },
 
-  // Login
+  // เข้าสู่ระบบ
   login: () => {
     keycloak.login();
   },
 
-  // Logout
+  // ออกจากระบบ
   logout: () => {
     keycloak.logout({
       redirectUri: window.location.origin,
     });
   },
 
-  // Refresh token
+  // รีเฟรช Token
   refreshToken: async (): Promise<boolean> => {
     try {
       const refreshed = await keycloak.updateToken(30);
@@ -125,13 +125,13 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
       return refreshed;
     } catch (error) {
-      console.error('Failed to refresh token:', error);
+      console.error('รีเฟรช Token ไม่สำเร็จ:', error);
       return false;
     }
   },
 }));
 
-// Export hook alias for easier migration
+// Export hook alias สำหรับใช้งานง่ายขึ้น
 export const useAuth = useAuthStore;
 
 export default useAuthStore;
