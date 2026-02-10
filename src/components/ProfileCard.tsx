@@ -54,6 +54,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
 
   // สร้างตัวอักษรย่อจากชื่อ
   const getInitials = (name: string) => {
+    if (!name) return '??';
     return name
       .split(' ')
       .map((n) => n[0])
@@ -84,14 +85,17 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
           <div className="flex flex-col items-center">
             <div className="relative">
               <Avatar className="border-primary/20 h-36 w-36 border-4">
-                <AvatarImage src={urlImage || undefined} alt={displayName} />
+                <AvatarImage
+                  src={urlImage || undefined}
+                  alt={displayName || userName || 'User'}
+                />
                 <AvatarFallback className="bg-primary text-primary-foreground text-3xl">
-                  {getInitials(displayName || userName)}
+                  {getInitials(displayName || userName || '')}
                 </AvatarFallback>
               </Avatar>
             </div>
             <h3 className="mt-4 text-center text-lg font-semibold">
-              {displayName}
+              {displayName || userName || 'ผู้ใช้'}
             </h3>
             <Badge variant="secondary" className="mt-1">
               {position || 'พนักงาน'}
