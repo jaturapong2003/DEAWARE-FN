@@ -13,6 +13,11 @@ export const navigationItems = [
     icon: HistoryIcon,
   },
   {
+    title: 'พนักงาน',
+    url: '/employees',
+    icon: UsersIcon,
+  },
+  {
     title: 'ประวัติทั้งหมด',
     url: '/users',
     icon: UsersIcon,

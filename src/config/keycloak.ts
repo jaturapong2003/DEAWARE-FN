@@ -1,18 +1,18 @@
 import Keycloak from 'keycloak-js';
 
-// Key environments config.
-const url = import.meta.env.KEYCLOAK_URL;
-const realm = import.meta.env.REALM;
-const clientId = import.meta.env.KEYCLOAK_URL;
+// ตั้งค่า environment variables (ต้องใช้ prefix VITE_ สำหรับ Vite)
+const url = import.meta.env.VITE_KEYCLOAK_URL;
+const realm = import.meta.env.VITE_REALM;
+const clientId = import.meta.env.VITE_CLIENT_ID;
 
-// Keycloak Configuration.
+// การตั้งค่า Keycloak
 const keycloakConfig = {
-  url: url || 'http://localhost:8080',
-  realm: realm || 'your-realm',
-  clientId: clientId || 'your-client-id',
+  url: url,
+  realm: realm,
+  clientId: clientId,
 };
 
-// Create Keycloak instance.
+// สร้าง Keycloak instance
 const keycloak = new Keycloak(keycloakConfig);
 
 export default keycloak;
