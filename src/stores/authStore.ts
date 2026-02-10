@@ -1,19 +1,12 @@
 import { create } from 'zustand';
 import keycloak from '../config/keycloak';
-
-// Types - ประเภทข้อมูล
-interface UserProfile {
-  id?: string;
-  username?: string;
-  email?: string;
-  firstName?: string;
-  lastName?: string;
-}
+import type { KeycloakProfile } from 'keycloak-js';
+import type { AccountInfo } from '@/@types/Account';
 
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: UserProfile | null;
+  user: KeycloakProfile | AccountInfo | null;
   token: string | null;
   // Actions - ฟังก์ชัน
   login: () => void;
@@ -34,7 +27,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const authenticated = await keycloak.init({
         onLoad: 'check-sso',
-        silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
+        silentCheckSsoRedirectUri:
+          window.location.origin + '/silent-check-sso.html',
         pkceMethod: 'S256',
         checkLoginIframe: false,
       });
@@ -43,13 +37,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (authenticated) {
         set({ token: keycloak.token || null });
-        
+
         // โหลดข้อมูลผู้ใช้
         try {
           const profile = await keycloak.loadUserProfile();
           set({
             user: {
-              id: profile.id,
+              id: profile.id || '',
               username: profile.username,
               email: profile.email,
               firstName: profile.firstName,
@@ -63,15 +57,18 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       // ตั้งค่า event handlers
       keycloak.onTokenExpired = () => {
-        keycloak.updateToken(30).then((refreshed) => {
-          if (refreshed) {
-            set({ token: keycloak.token || null });
-            console.log('รีเฟรช Token สำเร็จ');
-          }
-        }).catch(() => {
-          console.error('รีเฟรช Token ไม่สำเร็จ');
-          set({ isAuthenticated: false, user: null, token: null });
-        });
+        keycloak
+          .updateToken(30)
+          .then((refreshed) => {
+            if (refreshed) {
+              set({ token: keycloak.token || null });
+              console.log('รีเฟรช Token สำเร็จ');
+            }
+          })
+          .catch(() => {
+            console.error('รีเฟรช Token ไม่สำเร็จ');
+            set({ isAuthenticated: false, user: null, token: null });
+          });
       };
 
       keycloak.onAuthSuccess = async () => {
@@ -80,7 +77,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           const profile = await keycloak.loadUserProfile();
           set({
             user: {
-              id: profile.id,
+              id: profile.id || '',
               username: profile.username,
               email: profile.email,
               firstName: profile.firstName,
@@ -95,7 +92,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       keycloak.onAuthLogout = () => {
         set({ isAuthenticated: false, user: null, token: null });
       };
-
     } catch (error) {
       console.error('เริ่มต้น Keycloak ไม่สำเร็จ:', error);
       set({ isAuthenticated: false });
