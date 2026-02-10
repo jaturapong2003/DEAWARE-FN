@@ -1,31 +1,86 @@
-import { Button } from '@/components/ui/button';
 import React from 'react';
+import ProfileCard from '@/components/ProfileCard';
+import CheckInOutButtons from '@/components/CheckInOutButtons';
+import { useEmployee } from '@/hooks/useEmployee';
+import { useAttendance } from '@/hooks/useAttendance';
+import { useToast } from '@/components/Toast';
+import { Loader2 } from 'lucide-react';
 
+/**
+ * หน้าหลัก - แสดงรูปและปุ่มบันทึกเวลาเข้า-ออกงาน
+ */
 const HomePage: React.FC = () => {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-card p-6">
-        <h2 className="text-2xl font-bold mb-2">Welcome to DEAWARE</h2>
-        <p className="text-muted-foreground mb-4">
-          Face Recognition Attendance System
-        </p>
-        <Button>Get Started</Button>
-      </div>
+  const {
+    profile,
+    loading: profileLoading,
+    error: profileError,
+  } = useEmployee();
+  const {
+    checkIn,
+    checkOut,
+    loading: actionLoading,
+    lastAction,
+  } = useAttendance();
+  const toast = useToast();
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-lg border bg-card p-6">
-          <h3 className="font-semibold mb-2">Total Employees</h3>
-          <p className="text-3xl font-bold">0</p>
-        </div>
-        <div className="rounded-lg border bg-card p-6">
-          <h3 className="font-semibold mb-2">Today's Attendance</h3>
-          <p className="text-3xl font-bold">0</p>
-        </div>
-        <div className="rounded-lg border bg-card p-6">
-          <h3 className="font-semibold mb-2">Active Sessions</h3>
-          <p className="text-3xl font-bold">0</p>
-        </div>
+  // แสดง Loading
+  if (profileLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">กำลังโหลดข้อมูล...</span>
       </div>
+    );
+  }
+
+  // แสดง Error
+  if (profileError || !profile) {
+    return (
+      <div className="rounded-lg bg-red-100 p-6 text-center text-red-700">
+        <p>❌ {profileError || 'ไม่สามารถโหลดข้อมูลได้'}</p>
+      </div>
+    );
+  }
+
+  // Handler สำหรับปุ่ม Check-in
+  const handleCheckIn = async () => {
+    try {
+      await checkIn();
+      toast.success('เข้างานสำเร็จ!');
+    } catch {
+      toast.error('เข้างานไม่สำเร็จ');
+    }
+  };
+
+  // Handler สำหรับปุ่ม Check-out
+  const handleCheckOut = async () => {
+    try {
+      await checkOut();
+      toast.success('ออกงานสำเร็จ!');
+    } catch {
+      toast.error('ออกงานไม่สำเร็จ');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* การ์ดแสดงรูปและข้อมูลพนักงาน */}
+      <ProfileCard
+        displayName={profile.display_name}
+        email={profile.email}
+        urlImage={profile.url_image}
+        userName={profile.user_name}
+        phoneNumber={profile.phone_number}
+        position={profile.position}
+      />
+
+      {/* ปุ่ม Check-in / Check-out */}
+      <CheckInOutButtons
+        onCheckIn={handleCheckIn}
+        onCheckOut={handleCheckOut}
+        loading={actionLoading}
+        lastAction={lastAction}
+      />
     </div>
   );
 };
