@@ -4,6 +4,7 @@ import HomePage from '../pages/HomePage';
 import HistoryPage from '../pages/HistoryPage';
 import ApiTestPage from '../test/ApiTestPage';
 import MainLayout from '../components/layouts/MainLayout';
+import EmployeesPage from '@/pages/EmployeesPage';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -13,6 +14,8 @@ const AppRoutes: React.FC = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/api-test" element={<ApiTestPage />} />
+          <Route path="/employees" element={<EmployeesPage />} />
+          <Route path="/employees/:id" element={<EmployeesPage />} />
           <Route path="*" element={<div>404 Not Found</div>} />
         </Routes>
       </MainLayout>
