@@ -19,7 +19,9 @@ const HomePage: React.FC = () => {
     checkIn,
     checkOut,
     loading: actionLoading,
-    lastAction,
+    isCheckedIn,
+    checkInTime,
+    checkOutTime,
   } = useAttendance();
   const toast = useToast();
 
@@ -74,12 +76,14 @@ const HomePage: React.FC = () => {
         position={profile.position}
       />
 
-      {/* ปุ่ม Check-in / Check-out */}
+      {/* ปุ่ม Check-in / Check-out พร้อมแสดงเวลา */}
       <CheckInOutButtons
         onCheckIn={handleCheckIn}
         onCheckOut={handleCheckOut}
         loading={actionLoading}
-        lastAction={lastAction}
+        isCheckedIn={isCheckedIn}
+        checkInTime={checkInTime}
+        checkOutTime={checkOutTime}
       />
     </div>
   );
