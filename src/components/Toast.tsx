@@ -36,24 +36,30 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // แสดง Toast สำเร็จ (สีเขียว)
-  const success = useCallback((message: string) => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type: 'success' }]);
-    setTimeout(() => removeToast(id), 3000); // ซ่อนหลัง 3 วินาที
+  // ลบ Toast
+  const removeToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  // แสดง Toast สำเร็จ (สีเขียว)
+  const success = useCallback(
+    (message: string) => {
+      const id = Date.now();
+      setToasts((prev) => [...prev, { id, message, type: 'success' }]);
+      setTimeout(() => removeToast(id), 3000); // ซ่อนหลัง 3 วินาที
+    },
+    [removeToast]
+  );
 
   // แสดง Toast ล้มเหลว (สีแดง)
-  const error = useCallback((message: string) => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type: 'error' }]);
-    setTimeout(() => removeToast(id), 3000);
-  }, []);
-
-  // ลบ Toast
-  const removeToast = (id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  const error = useCallback(
+    (message: string) => {
+      const id = Date.now();
+      setToasts((prev) => [...prev, { id, message, type: 'error' }]);
+      setTimeout(() => removeToast(id), 3000);
+    },
+    [removeToast]
+  );
 
   return (
     <ToastContext.Provider value={{ success, error }}>
@@ -71,9 +77,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
             } `}
           >
             {toast.type === 'success' ? (
-              <CheckCircle className="h-5 w-5 flex-shrink-0" />
+              <CheckCircle className="h-5 w-5 shrink-0" />
             ) : (
-              <XCircle className="h-5 w-5 flex-shrink-0" />
+              <XCircle className="h-5 w-5 shrink-0" />
             )}
             <span className="flex-1 font-medium">{toast.message}</span>
             <button

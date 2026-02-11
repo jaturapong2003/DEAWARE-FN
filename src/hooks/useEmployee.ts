@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useApi } from '@/hooks/useApi';
 
 // ประเภทข้อมูลพนักงาน (ตาม API Response จริง)
@@ -9,7 +9,7 @@ interface EmployeeProfile {
   display_name: string;
   phone_number: string;
   position: string;
-  url_image: string;  // ชื่อ field จาก API
+  url_image: string;
   face_embedding_count: number;
   has_face_embedding: boolean;
   created_at: string;
@@ -17,34 +17,32 @@ interface EmployeeProfile {
 }
 
 /**
- * Hook สำหรับดึงข้อมูลพนักงานจาก API
+ * Hook สำหรับดึงข้อมูลพนักงานจาก API (ใช้ React Query)
+ * - Auto caching
+ * - Auto refetch เมื่อกลับมาที่หน้าเว็บ
+ * - Retry ถ้า request ล้มเหลว
  */
 export const useEmployee = () => {
   const { get } = useApi();
-  const [profile, setProfile] = useState<EmployeeProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // ดึงข้อมูลพนักงาน
-  const fetchProfile = async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const query = useQuery<EmployeeProfile>({
+    queryKey: ['employee', 'me'],
+    queryFn: async () => {
       const response = await get<EmployeeProfile>('/employee/me');
-      setProfile(response.data);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'ไม่สามารถโหลดข้อมูลได้';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // Cache 5 นาที
+    retry: 2, // Retry 2 ครั้งถ้าล้มเหลว
+    refetchOnWindowFocus: true, // Refetch เมื่อกลับมาที่หน้าต่าง
+  });
+
+  return {
+    profile: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error?.message ?? null,
+    refetch: query.refetch,
+    isRefetching: query.isRefetching,
   };
-
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  return { profile, loading, error, refetch: fetchProfile };
 };
 
 export default useEmployee;
