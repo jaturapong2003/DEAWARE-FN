@@ -4,6 +4,10 @@ import AppRoutes from './routes/AppRoutes';
 import './App.css';
 import KeycloakLoading from './components/KeycloakLoading';
 import { ToastProvider } from './components/Toast';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
+
+const queryClient = new QueryClient()
 
 function App() {
   const { keycloak, initialized } = useKeycloak();
@@ -33,11 +37,15 @@ function App() {
 
   // ผู้ใช้ยืนยันตัวตนแล้ว แสดงแอปพลิเคชัน
   return (
+     <QueryClientProvider client={queryClient}>
     <ToastProvider>
       <div className="App">
         <AppRoutes />
       </div>
+
     </ToastProvider>
+     <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }
 
