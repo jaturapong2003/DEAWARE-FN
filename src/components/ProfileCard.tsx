@@ -53,11 +53,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
   };
 
   // สร้างตัวอักษรย่อจากชื่อ
-<<<<<<< HEAD
-  const getInitials = (name: string) => {
-=======
   const getInitials = (name: string | undefined | null) => {
->>>>>>> keyclock
     if (!name) return '??';
     return name
       .split(' ')
@@ -89,20 +85,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
           {/* ส่วนรูปโปรไฟล์ */}
           <div className="flex flex-col items-center">
             <div className="relative">
-<<<<<<< HEAD
-              <Avatar className="border-primary/20 h-36 w-36 border-4">
-                <AvatarImage
-                  src={urlImage || undefined}
-                  alt={displayName || userName || 'User'}
-                />
-                <AvatarFallback className="bg-primary text-primary-foreground text-3xl">
-                  {getInitials(displayName || userName || '')}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <h3 className="mt-4 text-center text-lg font-semibold">
-              {displayName || userName || 'ผู้ใช้'}
-=======
               <Avatar className="border-primary/20 h-24 w-24 border-4 sm:h-36 sm:w-36">
                 <AvatarImage src={urlImage || undefined} alt={displayName} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-xl sm:text-3xl">
@@ -112,7 +94,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
             </div>
             <h3 className="mt-3 text-center text-base font-semibold sm:mt-4 sm:text-lg">
               {displayName}
->>>>>>> keyclock
             </h3>
             <Badge variant="secondary" className="mt-1 text-xs">
               {position || 'พนักงาน'}
