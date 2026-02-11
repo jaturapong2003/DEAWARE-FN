@@ -9,7 +9,7 @@ export const navigationItems = [
   },
   {
     title: 'เข้า-ออกงาน',
-    url: '/history',
+    url: '/attendance',
     icon: HistoryIcon,
   },
   {
@@ -19,7 +19,7 @@ export const navigationItems = [
   },
   {
     title: 'ประวัติทั้งหมด',
-    url: '/users',
+    url: '/history',
     icon: UsersIcon,
   },
 ];
