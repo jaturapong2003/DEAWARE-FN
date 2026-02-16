@@ -13,60 +13,12 @@ import {
   CheckCircle2,
   XCircle,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import keycloak from '@/config/keycloak';
+import LoadingPage from '@/components/common/LoadingPage';
+import ErrorPage from '@/components/common/ErrorPage';
 
-const data: AttendanceResponse = {
-  records: [
-    {
-      id: 'f0bf1196-59a2-444d-8767-3c819c0b6a5a',
-      employee_id: '79c95bc9-7f3d-45d5-a618-2fed3821a17c',
-      check_in: '2026-02-10T07:05:54Z',
-      check_out: null,
-      work_hours: '0 นาที',
-      check_in_device: 'mobile_app',
-      check_in_confidence: 0.95,
-      check_out_device: '',
-      check_out_confidence: 0,
-    },
-    {
-      id: '3df160df-2c12-464c-a85e-0a8502104d67',
-      employee_id: '79c95bc9-7f3d-45d5-a618-2fed3821a17c',
-      check_in: '2026-02-09T10:41:58Z',
-      check_out: '2026-02-09T16:16:56Z',
-      work_hours: '5 ชม. 33 นาที',
-      check_in_device: 'mobile_app',
-      check_in_confidence: 0.95,
-      check_out_device: 'web_app',
-      check_out_confidence: 0.92,
-    },
-    {
-      id: 'd56ff97f-3d57-47a4-bc44-f0bf6f799b7d',
-      employee_id: '79c95bc9-7f3d-45d5-a618-2fed3821a17c',
-      check_in: '2026-02-08T13:59:35Z',
-      check_out: '2026-02-08T13:59:38Z',
-      work_hours: '0 นาที',
-      check_in_device: 'mobile_app',
-      check_in_confidence: 0.95,
-      check_out_device: 'mobile_app',
-      check_out_confidence: 0.92,
-    },
-    {
-      id: '09927543-844b-4fb6-9ab5-d29fcdb5d645',
-      employee_id: '79c95bc9-7f3d-45d5-a618-2fed3821a17c',
-      check_in: '2026-02-06T10:48:19Z',
-      check_out: '2026-02-06T12:09:38Z',
-      work_hours: '1 ชม. 21 นาที',
-      check_in_device: 'mobile_app',
-      check_in_confidence: 0.95,
-      check_out_device: 'mobile_app',
-      check_out_confidence: 0.92,
-    },
-  ],
-  total: 4,
-};
-
-/**
- * Format เฉพาะเวลา
- */
+// format time
 const formatTime = (dateString: string | null) => {
   if (!dateString) return '-';
   const date = new Date(dateString);
@@ -76,9 +28,7 @@ const formatTime = (dateString: string | null) => {
   });
 };
 
-/**
- * Format วันที่เป็นภาษาไทย
- */
+// format date
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '-';
   const date = new Date(dateString);
@@ -89,9 +39,7 @@ const formatDate = (dateString: string | null) => {
   });
 };
 
-/**
- * แสดง icon ตามประเภทอุปกรณ์
- */
+// ICON DEVICE
 const DeviceIcon: React.FC<{ device: string | null }> = ({ device }) => {
   if (!device) return null;
   if (device === 'mobile_app') {
@@ -100,9 +48,7 @@ const DeviceIcon: React.FC<{ device: string | null }> = ({ device }) => {
   return <Monitor className="h-4 w-4" />;
 };
 
-/**
- * คอมโพเนนต์การ์ดแสดงข้อมูลการเข้างานแต่ละครั้ง
- */
+// Card attendance
 const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
   const isActive = !record.check_out;
 
@@ -195,21 +141,50 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
   );
 };
 
-/**
- * หน้าประวัติการเข้า-ออกงานของพนักงาน
- */
-function EmployeeAttendancePage() {
+async function fetchAttendanceMe(
+  token: string | null
+): Promise<AttendanceResponse> {
+  if (!token) {
+    throw Error('เกิดข้อผิดพลาดการยืนยันตัวตน');
+  }
+
+  const response = await fetch('http://100.94.239.54:3001/api/attendance/me', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }).then((r) => r.json());
+
+  return response;
+}
+
+// Main page
+function AttendancePage() {
   const [searchTerm, setSearchTerm] = useState('');
 
-  // กรองข้อมูลตามวันที่
-  const filteredRecords = data.records.filter((record) => {
+  const token = keycloak.token;
+  const { data, isPending, error } = useQuery({
+    queryKey: ['history/me'],
+    queryFn: () => fetchAttendanceMe(token || ''),
+    enabled: keycloak.authenticated,
+  });
+
+  if (error) {
+    return <ErrorPage />;
+  }
+
+  if (isPending) {
+    return <LoadingPage />;
+  }
+
+  // analysis
+  const activeRecords = data.records.filter((r) => !r.check_out).length;
+  const completedRecords = data.records.filter((r) => r.check_out).length;
+
+  // filter date
+  const filteredRecords = (data?.records || []).filter((record) => {
     const dateStr = formatDate(record.check_in);
     return dateStr.toLowerCase().includes(searchTerm.toLowerCase());
   });
-
-  // คำนวณสถิติ
-  const activeRecords = data.records.filter((r) => !r.check_out).length;
-  const completedRecords = data.records.filter((r) => r.check_out).length;
 
   return (
     <div className="space-y-6">
@@ -287,4 +262,4 @@ function EmployeeAttendancePage() {
   );
 }
 
-export default EmployeeAttendancePage;
+export default AttendancePage;

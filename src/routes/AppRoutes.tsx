@@ -5,7 +5,7 @@ import HistoryPage from '../pages/HistoryPage';
 import ApiTestPage from '../test/ApiTestPage';
 import MainLayout from '../components/layouts/MainLayout';
 import EmployeesPage from '@/pages/EmployeesPage';
-import EmployeeAttendancePage from '@/pages/EmployeeAttendancePage';
+import AttendancePage from '@/pages/AttendancePage';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -14,7 +14,7 @@ const AppRoutes: React.FC = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/history" element={<HistoryPage />} />
-          <Route path="/attendance" element={<EmployeeAttendancePage />} />
+          <Route path="/attendance" element={<AttendancePage />} />
           <Route path="/api-test" element={<ApiTestPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
           <Route path="/employees/:id" element={<EmployeesPage />} />
