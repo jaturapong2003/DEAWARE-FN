@@ -1,50 +1,47 @@
-import { useEffect } from 'react';
-import { useKeycloak } from '@react-keycloak/web';
 import AppRoutes from './routes/AppRoutes';
+import { Toaster } from 'react-hot-toast';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import './App.css';
-import KeycloakLoading from './components/KeycloakLoading';
-import { ToastProvider } from './components/Toast';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient();
 
 function App() {
-  const { keycloak, initialized } = useKeycloak();
-
-  useEffect(() => {
-    // Debug: แสดงสถานะ Keycloak ใน console
-    console.log('Keycloak เริ่มต้นแล้ว:', initialized);
-    console.log('Keycloak ยืนยันตัวตน:', keycloak.authenticated);
-    console.log('Keycloak token:', keycloak.token ? 'มี' : 'ไม่มี');
-
-    // บังคับ login ถ้ายังไม่ได้ยืนยันตัวตน
-    if (initialized && !keycloak.authenticated) {
-      console.log('กำลังเปลี่ยนเส้นทางไปหน้า login...');
-      keycloak.login();
-    }
-  }, [initialized, keycloak]);
-
-  // แสดง Loading ขณะ Keycloak กำลังเริ่มต้น
-  if (!initialized) {
-    return <KeycloakLoading />;
-  }
-
-  // แสดง Loading ถ้ายังไม่ได้ยืนยันตัวตน (กำลัง redirect)
-  if (!keycloak.authenticated) {
-    return <KeycloakLoading />;
-  }
-
-  // ผู้ใช้ยืนยันตัวตนแล้ว แสดงแอปพลิเคชัน
   return (
-     <QueryClientProvider client={queryClient}>
-    <ToastProvider>
+    <QueryClientProvider client={queryClient}>
       <div className="App">
         <AppRoutes />
       </div>
-
-    </ToastProvider>
-     <ReactQueryDevtools initialIsOpen={false} />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 2600,
+          // base style for all toasts
+          style: {
+            padding: '0.45rem 0.75rem',
+            borderRadius: '0.5rem',
+            fontSize: '0.875rem',
+            minWidth: '180px',
+            boxShadow: '0 6px 20px rgba(2,6,23,0.08)',
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-card)',
+            color: 'var(--color-card-foreground)',
+          },
+          success: {
+            style: {
+              background: 'var(--color-success)',
+              color: 'var(--foreground)',
+            },
+          },
+          error: {
+            style: {
+              background: 'var(--color-destructive)',
+              color: 'var(--card)',
+            },
+          },
+        }}
+      />
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 }

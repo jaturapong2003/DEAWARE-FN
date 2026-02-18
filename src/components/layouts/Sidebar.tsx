@@ -36,14 +36,25 @@ const AppSidebar: React.FC = () => {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <div className="flex items-center justify-center py-2 group-data-[collapsible=icon]:hidden">
-          <img src={DEAWARE} alt="deaware logo" width={180} height={180} />
+      <SidebarHeader className="border-sidebar-border from-sidebar/50 border-b bg-linear-to-b to-transparent">
+        <div className="flex items-center justify-center py-3.25 group-data-[collapsible=icon]:hidden">
+          <div className="relative">
+            <div className="from-primary/10 via-accent/10 to-primary/10 absolute -inset-2 rounded-lg bg-linear-to-r opacity-50 blur-sm"></div>
+            <img
+              src={DEAWARE}
+              alt="deaware logo"
+              width={150}
+              height={150}
+              className="relative"
+            />
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>เมนูหลัก</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">
+            เมนูหลัก
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => (
@@ -52,9 +63,10 @@ const AppSidebar: React.FC = () => {
                     asChild
                     isActive={isActive(item.url)}
                     tooltip={item.title}
+                    className="group hover:bg-sidebar-accent/80 data-[active=true]:from-primary/20 data-[active=true]:to-primary/5 data-[active=true]:text-primary transition-all data-[active=true]:bg-linear-to-r data-[active=true]:shadow-sm"
                   >
                     <Link to={item.url}>
-                      <item.icon />
+                      <item.icon className="transition-transform group-hover:scale-110" />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -65,7 +77,9 @@ const AppSidebar: React.FC = () => {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>ตั้งค่า</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">
+            ตั้งค่า
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {settingsItems.map((item) => (
@@ -74,9 +88,10 @@ const AppSidebar: React.FC = () => {
                     asChild
                     isActive={isActive(item.url)}
                     tooltip={item.title}
+                    className="group hover:bg-sidebar-accent/80 data-[active=true]:from-accent/20 data-[active=true]:to-accent/5 data-[active=true]:text-accent transition-all data-[active=true]:bg-linear-to-r data-[active=true]:shadow-sm"
                   >
                     <Link to={item.url}>
-                      <item.icon />
+                      <item.icon className="transition-transform group-hover:scale-110" />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -86,7 +101,7 @@ const AppSidebar: React.FC = () => {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-sidebar-border from-sidebar/50 border-t bg-linear-to-t to-transparent">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -94,8 +109,9 @@ const AppSidebar: React.FC = () => {
                 keycloak.logout({ redirectUri: window.location.origin });
               }}
               tooltip="Logout"
+              className="group hover:bg-destructive/10 hover:text-destructive transition-all"
             >
-              <LogOutIcon />
+              <LogOutIcon className="transition-transform group-hover:scale-110" />
               <span>Logout</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
