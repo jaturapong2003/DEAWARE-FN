@@ -7,6 +7,7 @@ import MainLayout from '../components/layouts/MainLayout';
 import EmployeesPage from '@/pages/EmployeesPage';
 import EmployeeAttendancePage from '@/pages/EmployeeAttendancePage';
 
+
 const AppRoutes: React.FC = () => {
   return (
     <BrowserRouter>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useKeycloak } from '@react-keycloak/web';
 import { SettingsIcon, LogOutIcon } from 'lucide-react';
@@ -17,18 +17,13 @@ import {
 } from '@/components/ui/sidebar';
 import DEAWARE from '@/assets/deaware.webp';
 import { navigationItems } from '@/lib/itemMenu';
+import SettingModal from '../SettingHoverCard';
 
-const settingsItems = [
-  {
-    title: 'Settings',
-    url: '/settings',
-    icon: SettingsIcon,
-  },
-];
 
 const AppSidebar: React.FC = () => {
   const location = useLocation();
   const { keycloak } = useKeycloak();
+  const [openSetting, setOpenSetting] = useState(false);
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -68,20 +63,15 @@ const AppSidebar: React.FC = () => {
           <SidebarGroupLabel>ตั้งค่า</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                  >
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setOpenSetting(true)}
+                  tooltip="Settings"
+                >
+                  <SettingsIcon />
+                  <span>Settings</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -102,8 +92,13 @@ const AppSidebar: React.FC = () => {
         </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
+        <SettingModal
+  open={openSetting}
+  onClose={() => setOpenSetting(false)}
+/>
     </Sidebar>
   );
+
 };
 
 export default AppSidebar;

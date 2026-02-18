@@ -48,6 +48,7 @@ export const useAuthStore = create<AuthState>((set) => ({
               email: profile.email,
               firstName: profile.firstName,
               lastName: profile.lastName,
+    
             },
           });
         } catch (error) {

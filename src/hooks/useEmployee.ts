@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useApi } from '@/hooks/useApi';
+import { use } from 'react';
+import { useAuthStore } from '@/stores/authStore';
 
 // ประเภทข้อมูลพนักงาน (ตาม API Response จริง)
 interface EmployeeProfile {
@@ -24,6 +26,7 @@ interface EmployeeProfile {
  */
 export const useEmployee = () => {
   const { get } = useApi();
+  const user = useAuthStore((state) => state.user);
 
   const query = useQuery<EmployeeProfile>({
     queryKey: ['employee', 'me'],
