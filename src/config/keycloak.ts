@@ -1,6 +1,6 @@
 import Keycloak from 'keycloak-js';
 
-// ตั้งค่า environment variables (ต้องใช้ prefix VITE_ สำหรับ Vite)
+// ตั้งค่า environment variables
 const url = import.meta.env.VITE_KEYCLOAK_URL;
 const realm = import.meta.env.VITE_REALM;
 const clientId = import.meta.env.VITE_CLIENT_ID;
