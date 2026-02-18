@@ -1,58 +1,66 @@
 import { useState } from 'react';
-import type { AttendanceResponse } from '@/@types/Attendance';
-import { Input } from '@/components/ui/input';
-import { Calendar, Search } from 'lucide-react';
+import type { AttendanceResponse, AttendanceRecord } from '@/@types/Attendance';
+import type { DateRange } from 'react-day-picker';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import keycloak from '@/config/keycloak';
+import { fetchWithAuth } from '@/config/fetctWithAuth';
 import LoadingPage from '@/components/common/LoadingPage';
 import ErrorPage from '@/components/common/ErrorPage';
-import { formatDate } from '@/lib/date';
-import { AttendanceCard } from '@/components/attendances';
+import { Calendar as DatePicker } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import PaginationControll from '@/components/filter/PaginationControll';
+import AttendanceCard from './_components/AttendanceCard';
 
-async function fetchAttendanceMe(
-  token: string | null
-): Promise<AttendanceResponse> {
-  if (!token) {
-    throw Error('เกิดข้อผิดพลาดการยืนยันตัวตน');
-  }
+// Main AttendanceMePage
+function AttendanceMePage() {
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
 
-  const response = await fetch('/api/attendance/me', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }).then((r) => r.json());
-
-  return response;
-}
-
-// Main page
-function AttendancePage() {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const token = keycloak.token;
-  const { data, isPending, error } = useQuery({
-    queryKey: ['history/me'],
-    queryFn: () => fetchAttendanceMe(token || ''),
+  const { data, isLoading, error } = useQuery<AttendanceResponse>({
+    queryKey: ['history/me', page, limit],
+    queryFn: async () =>
+      fetchWithAuth<AttendanceResponse>(
+        `/api/attendance/me?page=${page}&limit=${limit}`
+      ),
     enabled: keycloak.authenticated,
   });
 
-  if (error) {
-    return <ErrorPage />;
-  }
+  if (error) return <ErrorPage />;
+  if (isLoading) return <LoadingPage message="กำลังโหลดประวัติของคุณ..." />;
 
-  if (isPending) {
-    return <LoadingPage />;
-  }
+  // stats
+  const totalRecords = data?.total ?? 0;
+  const activeRecords = (data?.records || []).filter(
+    (r: { check_out: string | null }) => !r.check_out
+  ).length;
+  const completedRecords = (data?.records || []).filter(
+    (r: { check_out: string | null }) => !!r.check_out
+  ).length;
 
-  // analysis
-  const activeRecords = data.records.filter((r) => !r.check_out).length;
-  const completedRecords = data.records.filter((r) => r.check_out).length;
+  // filter by selected date range (if any)
+  const filteredRecords = (data?.records || []).filter(
+    (record: { check_in: string | null }) => {
+      if (!dateRange || !dateRange.from) return true;
+      if (!record.check_in) return false;
+      const rec = new Date(record.check_in);
+      const start = new Date(dateRange.from);
+      const end = dateRange.to
+        ? new Date(dateRange.to)
+        : new Date(dateRange.from);
 
-  // filter date
-  const filteredRecords = (data?.records || []).filter((record) => {
-    const dateStr = formatDate(record.check_in);
-    return dateStr.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+      // normalize time portion
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      return rec >= start && rec <= end;
+    }
+  );
 
   return (
     <div className="space-y-6">
@@ -63,30 +71,58 @@ function AttendancePage() {
             <div>
               <h1 className="text-2xl font-bold">ประวัติการเข้า-ออกงาน</h1>
               <p className="text-muted-foreground mt-1 text-sm">
-                บันทึกการเข้า-ออกงานทั้งหมด
+                รายการบันทึกของคุณทั้งหมด
               </p>
             </div>
 
-            {/* ช่องค้นหา */}
-            <div className="relative w-full md:w-80">
-              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                type="text"
-                placeholder="ค้นหาตามวันที่..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            {/* ช่องเลือกช่วงวันที่ (popover) */}
+            <div className="relative w-full md:w-auto">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-center">
+                    <span>
+                      {dateRange?.from
+                        ? dateRange.to
+                          ? `${dateRange.from.toLocaleDateString('th-TH', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })} - ${dateRange.to.toLocaleDateString('th-TH', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}`
+                          : `${dateRange.from.toLocaleDateString('th-TH', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}`
+                        : 'เลือกช่วงวันที่'}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-1">
+                  <DatePicker
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={1}
+                    disabled={(date: Date) =>
+                      date > new Date() || date < new Date('1900-01-01')
+                    }
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
-          {/* Stats */}
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="bg-primary/5 rounded-lg p-4">
               <div className="text-muted-foreground mb-1 text-sm">
                 บันทึกทั้งหมด
               </div>
-              <div className="text-2xl font-bold">{data.total} ครั้ง</div>
+              <div className="text-2xl font-bold">{totalRecords} ครั้ง</div>
             </div>
             <div className="rounded-lg bg-green-50 p-4 dark:bg-green-950/20">
               <div className="text-muted-foreground mb-1 text-sm">
@@ -111,23 +147,37 @@ function AttendancePage() {
       {/* Attendance Records */}
       {filteredRecords.length > 0 ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          {filteredRecords.map((record) => (
+          {filteredRecords.map((record: AttendanceRecord) => (
             <AttendanceCard key={record.id} record={record} />
           ))}
         </div>
       ) : (
         <div className="bg-card rounded-lg border p-12 text-center">
-          <Calendar className="text-muted-foreground mx-auto h-12 w-12" />
+          <CalendarIcon className="text-muted-foreground mx-auto h-12 w-12" />
           <h3 className="mt-4 text-lg font-semibold">ไม่พบบันทึก</h3>
           <p className="text-muted-foreground mt-2 text-sm">
-            {searchTerm
-              ? `ไม่พบบันทึกที่ตรงกับ "${searchTerm}"`
+            {dateRange
+              ? `ไม่พบบันทึกสำหรับวันที่ที่เลือก`
               : 'ยังไม่มีบันทึกการเข้า-ออกงาน'}
           </p>
+        </div>
+      )}
+      {data && data.total_pages > 1 && (
+        <div className="flex items-center justify-center">
+          <PaginationControll
+            page={data.page}
+            totalPages={data.total_pages}
+            limit={data.limit}
+            onPageChange={(p) => setPage(p)}
+            onLimitChange={(l) => {
+              setLimit(l);
+              setPage(1);
+            }}
+          />
         </div>
       )}
     </div>
   );
 }
 
-export default AttendancePage;
+export default AttendanceMePage;

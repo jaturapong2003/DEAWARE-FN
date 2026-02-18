@@ -111,7 +111,7 @@ const TransectionButton: React.FC<TransectionButtonProps> = ({
         disabled={loading || isCooldown}
         variant={isCheckedIn ? 'destructive' : 'default'}
         size="lg"
-        className={`w-full gap-2 font-medium transition-all ${
+        className={`w-full gap-2 font-medium cursor-pointer transition-all ${
           loading
             ? 'cursor-wait'
             : isCooldown

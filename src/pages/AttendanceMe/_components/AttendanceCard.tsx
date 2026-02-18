@@ -9,7 +9,7 @@ import {
   Smartphone,
   XCircle,
 } from 'lucide-react';
-import { Badge } from '../ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { formatDate, formatTime } from '@/lib/date';
 
 // ICON DEVICE

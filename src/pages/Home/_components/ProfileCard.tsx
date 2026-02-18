@@ -7,7 +7,6 @@ import {
   User,
   Building2,
   Phone,
-  Briefcase,
   Clock,
   ScanFace,
 } from 'lucide-react';
@@ -143,17 +142,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                 </div>
                 <p className="text-foreground text-sm font-medium sm:text-base">
                   {phoneNumber || '-'}
-                </p>
-              </div>
-
-              {/* ตำแหน่ง */}
-              <div className="group space-y-1.5">
-                <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
-                  <Briefcase className="text-chart-5/60 group-hover:text-chart-5 h-3.5 w-3.5 transition-colors sm:h-4 sm:w-4" />
-                  <span>ตำแหน่ง</span>
-                </div>
-                <p className="text-foreground text-sm font-medium sm:text-base">
-                  {position || '-'}
                 </p>
               </div>
 
