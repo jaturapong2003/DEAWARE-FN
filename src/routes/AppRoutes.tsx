@@ -7,7 +7,7 @@ import LoadingPage from '../components/common/LoadingPage';
 const HomePage = lazy(() => import('../pages/Home/HomePage'));
 const HistoryPage = lazy(() => import('../pages/HistoryPage'));
 const ApiTestPage = lazy(() => import('../ApiTestPage'));
-const EmployeesPage = lazy(() => import('@/pages/EmployeesPage'));
+const EmployeesPage = lazy(() => import('@/pages/Employee/EmployeesPage'));
 const AttendanceMePage = lazy(
   () => import('@/pages/AttendanceMe/AttendanceMePage')
 );

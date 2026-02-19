@@ -1,12 +1,12 @@
 import type { AttendanceRecord } from '@/@types/Attendance';
 import {
   Calendar,
+  Camera,
   CheckCircle2,
   Clock,
   LogIn,
   LogOut,
   Monitor,
-  Smartphone,
   XCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -15,10 +15,27 @@ import { formatDate, formatTime } from '@/lib/date';
 // ICON DEVICE
 const DeviceIcon: React.FC<{ device: string | null }> = ({ device }) => {
   if (!device) return null;
-  if (device === 'mobile_app') {
-    return <Smartphone className="h-4 w-4" />;
+
+  if (device === 'web_app') {
+    return <Monitor className="h-4 w-4" />;
   }
-  return <Monitor className="h-4 w-4" />;
+  return <Camera className="h-4 w-4" />;
+};
+
+// DEVICE NAME
+const getDeviceName = (device: string | null): string => {
+  if (!device) return 'ไม่ระบุ';
+  if (device === 'web_app') return 'เว็บแอพ';
+  if (device === 'mobile_app') return 'มือถือแอพ';
+  return 'กล้อง';
+};
+
+// CONFIDENCE BADGE COLOR
+const getConfidenceColor = (confidence: number | null): string => {
+  if (!confidence) return 'text-muted-foreground';
+  if (confidence >= 90) return 'text-green-600';
+  if (confidence >= 70) return 'text-yellow-600';
+  return 'text-orange-600';
 };
 
 // Card attendance
@@ -53,7 +70,7 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
         <div className="grid gap-4 md:grid-cols-2">
           {/* เวลาเข้างาน */}
           <div className="space-y-2">
-            <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
+            <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
               <LogIn className="h-4 w-4" />
               <span>เวลาเข้างาน</span>
             </div>
@@ -63,37 +80,65 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                 {formatTime(record.check_in)}
               </span>
             </div>
-            {record.check_in_device && (
+            <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
               <div className="flex items-center gap-2">
                 <DeviceIcon device={record.check_in_device} />
-                <span className="text-muted-foreground text-xs">
-                  {record.check_in_device === 'mobile_app'
-                    ? 'แอปมือถือ'
-                    : 'กล้อง'}
+                <span className="text-xs font-medium">
+                  {getDeviceName(record.check_in_device)}
                 </span>
               </div>
-            )}
+              {record.check_in_confidence !== null && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground text-xs">
+                    ความแม่นยำ:
+                  </span>
+                  <span
+                    className={`text-xs font-bold ${getConfidenceColor(record.check_in_confidence)}`}
+                  >
+                    {record.check_in_confidence.toFixed(1)}%
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* เวลาออกงาน */}
           <div className="space-y-2">
-            <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
+            <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
               <LogOut className="h-4 w-4" />
               <span>เวลาออกงาน</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-orange-500" />
               <span className="text-lg font-semibold">
-                {formatTime(record.check_out)}
+                {record.check_out ? formatTime(record.check_out) : '-'}
               </span>
             </div>
-            {record.check_out_device && (
-              <div className="flex items-center gap-2">
-                <DeviceIcon device={record.check_out_device} />
+            {record.check_out ? (
+              <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
+                <div className="flex items-center gap-2">
+                  <DeviceIcon device={record.check_out_device} />
+                  <span className="text-xs font-medium">
+                    {getDeviceName(record.check_out_device)}
+                  </span>
+                </div>
+                {record.check_out_confidence !== null && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">
+                      ความแม่นยำ:
+                    </span>
+                    <span
+                      className={`text-xs font-bold ${getConfidenceColor(record.check_out_confidence)}`}
+                    >
+                      {record.check_out_confidence.toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-muted/30 rounded-md p-2">
                 <span className="text-muted-foreground text-xs">
-                  {record.check_out_device === 'mobile_app'
-                    ? 'แอปมือถือ'
-                    : 'กล้อง'}
+                  ยังไม่ได้ออกงาน
                 </span>
               </div>
             )}
@@ -102,10 +147,13 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
 
         {/* ชั่วโมงทำงาน */}
         <div className="mt-4 border-t pt-4">
-          <div className="bg-primary/5 flex items-center justify-between rounded-md px-3 py-2">
-            <span className="text-muted-foreground text-sm">ชั่วโมงทำงาน</span>
-            <span className="text-primary text-lg font-bold">
-              {record.work_hours}
+          <div className="from-primary/10 to-primary/5 border-primary/20 flex items-center justify-between rounded-lg border bg-gradient-to-r px-4 py-3">
+            <div className="flex items-center gap-2">
+              <Clock className="text-primary h-5 w-5" />
+              <span className="text-sm font-medium">ชั่วโมงทำงานรวม</span>
+            </div>
+            <span className="text-primary text-xl font-bold">
+              {record.work_hours || '0.00'}
             </span>
           </div>
         </div>
