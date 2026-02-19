@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '@/hooks/useApi';
+import { useKeycloak } from '@react-keycloak/web';
+import apiClient from '@/lib/apiClient';
 
 // ประเภทข้อมูลการตอบกลับจาก check-in/check-out
 interface AttendanceResponse {
@@ -21,17 +22,38 @@ interface ErrorResponse {
   error: string;
 }
 
-// Key สำหรับเก็บใน localStorage
-const STORAGE_KEY = 'attendance_today';
+// Base key สำหรับเก็บใน localStorage (จะต่อด้วย user_id)
+const STORAGE_KEY_PREFIX = 'attendance_today_';
 
 /**
  * Hook สำหรับจัดการ Check-in / Check-out (ใช้ React Query Mutations)
  */
 export const useAttendance = () => {
-  const { post } = useApi();
+
   const queryClient = useQueryClient();
-  const [checkInTime, setCheckInTime] = useState<string | null>(null);
-  const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
+  const { keycloak } = useKeycloak();
+  const userId = keycloak.tokenParsed?.sub || 'unknown';
+  const storageKey = `${STORAGE_KEY_PREFIX}${userId}`;
+
+  // อ่านค่าเริ่มต้นจาก localStorage (แยกตาม user)
+  const getInitialTime = (field: 'checkIn' | 'checkOut'): string | null => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (!stored) return null;
+      const data = JSON.parse(stored);
+      const today = new Date().toDateString();
+      if (data.date === today) {
+        return data[field] || null;
+      }
+      localStorage.removeItem(storageKey);
+    } catch {
+      localStorage.removeItem(storageKey);
+    }
+    return null;
+  };
+
+  const [checkInTime, setCheckInTime] = useState<string | null>(() => getInitialTime('checkIn'));
+  const [checkOutTime, setCheckOutTime] = useState<string | null>(() => getInitialTime('checkOut'));
 
   // แปลง ISO timestamp เป็นเวลา HH:mm
   const formatTimeFromISO = (isoString: string | null | undefined) => {
@@ -47,39 +69,26 @@ export const useAttendance = () => {
     }
   };
 
-  // โหลดเวลาจาก localStorage เมื่อเริ่มต้น
+  // Invalidate cache เมื่อ user เปลี่ยน
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const data = JSON.parse(stored);
-        const today = new Date().toDateString();
-        if (data.date === today) {
-          setCheckInTime(data.checkIn);
-          setCheckOutTime(data.checkOut);
-        } else {
-          localStorage.removeItem(STORAGE_KEY);
-        }
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
-  }, []);
+    queryClient.invalidateQueries({ queryKey: ['employee'] });
+    queryClient.invalidateQueries({ queryKey: ['attendance'] });
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // บันทึกเวลาลง localStorage
+  // บันทึกเวลาลง localStorage (แยกตาม user)
   const saveToStorage = useCallback((checkIn: string | null, checkOut: string | null) => {
     const data = {
       date: new Date().toDateString(),
       checkIn,
       checkOut,
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, []);
+    localStorage.setItem(storageKey, JSON.stringify(data));
+  }, [storageKey]);
 
   // Mutation สำหรับ Check-in
   const checkInMutation = useMutation<AttendanceResponse, Error>({
     mutationFn: async () => {
-      const response = await post<AttendanceResponse>('/attendance/check-in', {
+      const response = await apiClient.post<AttendanceResponse>('/attendance/check-in', {
         device: 'web_app',
         confidence: 0.95
       });
@@ -108,7 +117,7 @@ export const useAttendance = () => {
   // Mutation สำหรับ Check-out
   const checkOutMutation = useMutation<AttendanceResponse, Error>({
     mutationFn: async () => {
-      const response = await post<AttendanceResponse>('/attendance/check-out', {
+      const response = await apiClient.post<AttendanceResponse>('/attendance/check-out', {
         device: 'web_app',
         confidence: 0.92
       });

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useApi } from '@/hooks/useApi';
+import apiClient, { getAccessToken } from '@/lib/apiClient';
 import { useKeycloak } from '@react-keycloak/web';
 import { Button } from '@/components/ui/button';
 
@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
  * หน้าทดสอบ API - ใช้สำหรับทดสอบการเชื่อมต่อ API พร้อม Token
  */
 const ApiTestPage = () => {
-  const { get, getToken } = useApi();
   const { keycloak, initialized } = useKeycloak();
   const [result, setResult] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -27,7 +26,7 @@ const ApiTestPage = () => {
     setResult('');
 
     try {
-      const response = await get('/employee/me');
+      const response = await apiClient.get('/employee/me');
       setResult(JSON.stringify(response.data, null, 2));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -46,7 +45,7 @@ const ApiTestPage = () => {
         <h2 className="mb-2 font-semibold">🔑 Access Token</h2>
         <div className="bg-muted max-h-32 overflow-auto rounded p-2">
           <code className="text-xs break-all">
-            {getToken() || 'ไม่มี Token'}
+            {getAccessToken() || 'ไม่มี Token'}
           </code>
         </div>
       </div>

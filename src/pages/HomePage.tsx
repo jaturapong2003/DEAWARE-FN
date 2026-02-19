@@ -1,4 +1,5 @@
 import React from 'react';
+import { useKeycloak } from '@react-keycloak/web';
 import ProfileCard from '@/components/ProfileCard';
 import CheckInOutButtons from '@/components/CheckInOutButtons';
 import { useEmployee } from '@/hooks/useEmployee';
@@ -10,11 +11,17 @@ import { Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
  * หน้าหลัก - Responsive พร้อม Banner เตือน
  */
 const HomePage: React.FC = () => {
+  const { keycloak } = useKeycloak();
   const {
     profile,
     loading: profileLoading,
     error: profileError,
   } = useEmployee();
+
+  // ดึงข้อมูล user จาก Keycloak token
+  const displayName = keycloak.tokenParsed?.name || 'ไม่ระบุชื่อ';
+  const email = keycloak.tokenParsed?.email || '-';
+  const userName = keycloak.tokenParsed?.preferred_username || '-';
   const {
     checkIn,
     checkOut,
@@ -133,10 +140,10 @@ const HomePage: React.FC = () => {
 
       {/* การ์ดแสดงรูปและข้อมูลพนักงาน */}
       <ProfileCard
-        displayName={profile.display_name || 'ไม่ระบุชื่อ'}
-        email={profile.email || '-'}
+        displayName={displayName}
+        email={email}
         urlImage={profile.url_image}
-        userName={profile.user_name || '-'}
+        userName={userName}
         phoneNumber={profile.phone_number}
         position={profile.position}
       />
