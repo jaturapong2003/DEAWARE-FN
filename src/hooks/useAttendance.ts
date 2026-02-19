@@ -1,22 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useKeycloak } from '@react-keycloak/web';
 import apiClient from '@/lib/apiClient';
 
-// ประเภทข้อมูลการตอบกลับจาก check-in/check-out
-interface AttendanceResponse {
-  id: string;
-  employee_id: string;
-  check_in: string;
-  check_out: string;
-  work_hours: string;
-  check_in_device: string;
-  check_out_device: string;
-  check_in_confidence: number;
-  check_out_confidence: number;
-}
-
-// ประเภท error response
+// error response
 interface ErrorResponse {
   disabled: boolean;
   error: string;
@@ -55,19 +42,9 @@ export const useAttendance = () => {
   const [checkInTime, setCheckInTime] = useState<string | null>(() => getInitialTime('checkIn'));
   const [checkOutTime, setCheckOutTime] = useState<string | null>(() => getInitialTime('checkOut'));
 
-  // แปลง ISO timestamp เป็นเวลา HH:mm
-  const formatTimeFromISO = (isoString: string | null | undefined) => {
-    if (!isoString) return null;
-    try {
-      const date = new Date(isoString);
-      return date.toLocaleTimeString('th-TH', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return isoString;
-    }
-  };
+  const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
+  const cooldownRef = useRef<number | null>(null);
+  const COOLDOWN_AFTER_ACTION = 5; // seconds
 
   // Invalidate cache เมื่อ user เปลี่ยน
   useEffect(() => {
@@ -94,28 +71,14 @@ export const useAttendance = () => {
       });
       return response.data;
     },
-    onSuccess: (data) => {
-      const time = formatTimeFromISO(data.check_in);
-      setCheckInTime(time);
-      setCheckOutTime(null);
-      saveToStorage(time, null);
+    onSuccess: () => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
-    },
-    onError: (error: unknown) => {
-      const axiosError = error as { response?: { data?: ErrorResponse } };
-      const errorMessage = axiosError.response?.data?.error || 'Check-in ไม่สำเร็จ';
-      
-      // ถ้า error บอกว่าเช็คอินไปแล้ว → ตั้งค่าว่าเช็คอินแล้ว
-      if (errorMessage.includes('ลงชื่อเข้างานไปแล้ว') || axiosError.response?.data?.disabled) {
-        setCheckInTime('เช็คอินแล้ว');
-        saveToStorage('เช็คอินแล้ว', null);
-      }
     },
   });
 
   // Mutation สำหรับ Check-out
-  const checkOutMutation = useMutation<AttendanceResponse, Error>({
+  const checkOutMutation = useMutation<AttendanceSingleResponse, Error>({
     mutationFn: async () => {
       const response = await apiClient.post<AttendanceResponse>('/attendance/check-out', {
         device: 'web_app',
@@ -123,47 +86,69 @@ export const useAttendance = () => {
       });
       return response.data;
     },
-    onSuccess: (data) => {
-      const checkInFormatted = formatTimeFromISO(data.check_in);
-      const checkOutFormatted = formatTimeFromISO(data.check_out);
-      setCheckInTime(checkInFormatted);
-      setCheckOutTime(checkOutFormatted);
-      saveToStorage(checkInFormatted, checkOutFormatted);
+    onSuccess: () => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
+
+      // start cooldown to prevent immediate repeated check-out
+      setCooldownSeconds(COOLDOWN_AFTER_ACTION);
+      if (cooldownRef.current) {
+        clearInterval(cooldownRef.current);
+        cooldownRef.current = null;
+      }
+      cooldownRef.current = window.setInterval(() => {
+        setCooldownSeconds((s) => {
+          if (s <= 1) {
+            if (cooldownRef.current) {
+              clearInterval(cooldownRef.current);
+              cooldownRef.current = null;
+            }
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
     },
   });
 
-  // Wrapper functions ที่ throw error สำหรับ try-catch
-  const checkIn = async () => {
+  // Helper to extract error message
+  const getErrorMessage = (err: unknown, fallback: string): string => {
+    const errorResponse = (err as { response?: { data?: ErrorResponse } })
+      ?.response?.data;
+    return errorResponse?.error || fallback;
+  };
+
+  // Wrapper functions with consistent error handling
+  const checkIn = async (): Promise<AttendanceSingleResponse> => {
     try {
-      const result = await checkInMutation.mutateAsync();
-      return result;
-    } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: ErrorResponse } };
-      const errorMessage = axiosError.response?.data?.error || 'Check-in ไม่สำเร็จ';
-      throw new Error(errorMessage);
+      return await checkInMutation.mutateAsync();
+    } catch (err) {
+      throw new Error(getErrorMessage(err, 'Check-in ไม่สำเร็จ'));
     }
   };
 
-  const checkOut = async () => {
+  const checkOut = async (): Promise<AttendanceSingleResponse> => {
     try {
-      const result = await checkOutMutation.mutateAsync();
-      return result;
-    } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: ErrorResponse } };
-      const errorMessage = axiosError.response?.data?.error || 'Check-out ไม่สำเร็จ';
-      throw new Error(errorMessage);
+      return await checkOutMutation.mutateAsync();
+    } catch (err) {
+      throw new Error(getErrorMessage(err, 'Check-out ไม่สำเร็จ'));
     }
   };
 
-  return { 
-    checkIn, 
-    checkOut, 
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) {
+        clearInterval(cooldownRef.current);
+        cooldownRef.current = null;
+      }
+    };
+  }, []);
+
+  return {
+    checkIn,
+    checkOut,
     loading: checkInMutation.isPending || checkOutMutation.isPending,
-    error: checkInMutation.error?.message || checkOutMutation.error?.message || null,
-    checkInTime,
-    checkOutTime,
+    cooldownSeconds,
   };
 };
 

@@ -32,6 +32,10 @@
   font-display: swap;
 }
 
+html {
+  scrollbar-gutter: "stable";
+}
+
 /* Apply fonts globally */
 body {
   font-family:

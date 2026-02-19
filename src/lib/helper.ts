@@ -1,6 +1,4 @@
-/**
- * สร้างตัวอักษรย่อจากชื่อ
- */
+// getInitials
 export const getInitials = (name: string) => {
   if (!name) return '??';
   return name
