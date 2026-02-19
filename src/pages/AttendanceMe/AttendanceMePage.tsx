@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import PaginationControll from '@/components/filter/PaginationControll';
-import AttendanceCard from './_components/AttendanceCard';
+import AttendanceCard from '../../components/common/AttendanceCard';
 
 // Main AttendanceMePage
 function AttendanceMePage() {

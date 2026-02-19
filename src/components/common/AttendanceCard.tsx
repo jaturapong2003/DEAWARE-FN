@@ -1,5 +1,6 @@
 import type { AttendanceRecord } from '@/@types/Attendance';
 import {
+  Ban,
   Calendar,
   Camera,
   CheckCircle2,
@@ -14,28 +15,39 @@ import { formatDate, formatTime } from '@/lib/date';
 
 // ICON DEVICE
 const DeviceIcon: React.FC<{ device: string | null }> = ({ device }) => {
-  if (!device) return null;
-
-  if (device === 'web_app') {
-    return <Monitor className="h-4 w-4" />;
+  switch (device) {
+    case 'web_app':
+      return <Monitor className="h-4 w-4" />;
+    case 'camera':
+      return <Camera className="h-4 w-4" />;
+    default:
+      return <Ban className="h-4 w-4" />;
   }
-  return <Camera className="h-4 w-4" />;
 };
 
 // DEVICE NAME
 const getDeviceName = (device: string | null): string => {
-  if (!device) return 'ไม่ระบุ';
-  if (device === 'web_app') return 'เว็บแอพ';
-  if (device === 'mobile_app') return 'มือถือแอพ';
-  return 'กล้อง';
+  switch (device) {
+    case 'web_app':
+      return 'เว็บแอพ';
+    case 'camera':
+      return 'กล้อง';
+    default:
+      return 'ไม่ระบุ';
+  }
 };
 
 // CONFIDENCE BADGE COLOR
 const getConfidenceColor = (confidence: number | null): string => {
-  if (!confidence) return 'text-muted-foreground';
-  if (confidence >= 90) return 'text-green-600';
-  if (confidence >= 70) return 'text-yellow-600';
-  return 'text-orange-600';
+  if (!confidence) {
+    return 'text-muted-foreground';
+  } else if (confidence >= 0.9) {
+    return 'text-green-600';
+  } else if (confidence >= 0.7) {
+    return 'text-yellow-600';
+  } else {
+    return 'text-orange-600';
+  }
 };
 
 // Card attendance
@@ -95,7 +107,7 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                   <span
                     className={`text-xs font-bold ${getConfidenceColor(record.check_in_confidence)}`}
                   >
-                    {record.check_in_confidence.toFixed(1)}%
+                    {(record.check_in_confidence * 100).toFixed(1)}%
                   </span>
                 </div>
               )}
@@ -130,7 +142,7 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                     <span
                       className={`text-xs font-bold ${getConfidenceColor(record.check_out_confidence)}`}
                     >
-                      {record.check_out_confidence.toFixed(1)}%
+                      {(record.check_out_confidence * 100).toFixed(1)}%
                     </span>
                   </div>
                 )}
