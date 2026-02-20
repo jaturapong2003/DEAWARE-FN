@@ -29,7 +29,7 @@ export const useAttendance = (): UseAttendanceHook => {
         '/api/attendance/check-in',
         {
           method: 'POST',
-          body: JSON.stringify({ device: 'web_app', confidence: 0.95 }),
+          body: JSON.stringify({ device: 'web_app', confidence: 1 }),
         }
       );
     },
@@ -46,7 +46,7 @@ export const useAttendance = (): UseAttendanceHook => {
         '/api/attendance/check-out',
         {
           method: 'POST',
-          body: JSON.stringify({ device: 'web_app', confidence: 0.92 }),
+          body: JSON.stringify({ device: 'web_app', confidence: 1 }),
         }
       );
     },

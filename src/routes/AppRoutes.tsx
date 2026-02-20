@@ -6,8 +6,8 @@ import LoadingPage from '../components/common/LoadingPage';
 // Lazy load pages
 const HomePage = lazy(() => import('../pages/Home/HomePage'));
 const HistoryPage = lazy(() => import('../pages/HistoryPage'));
-const ApiTestPage = lazy(() => import('../test/ApiTestPage'));
-const EmployeesPage = lazy(() => import('@/pages/EmployeesPage'));
+const ApiTestPage = lazy(() => import('../ApiTestPage'));
+const EmployeesPage = lazy(() => import('@/pages/Employee/EmployeesPage'));
 const AttendanceMePage = lazy(
   () => import('@/pages/AttendanceMe/AttendanceMePage')
 );
@@ -17,7 +17,11 @@ const AppRoutes: React.FC = () => {
   return (
     <BrowserRouter>
       <MainLayout>
-        <Suspense fallback={<LoadingPage message="กำลังโหลดหน้า..." fullScreen={true} />}>
+        <Suspense
+          fallback={
+            <LoadingPage message="กำลังโหลดหน้า..." fullScreen={true} />
+          }
+        >
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/history" element={<HistoryPage />} />

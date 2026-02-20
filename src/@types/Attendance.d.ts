@@ -14,7 +14,10 @@ export interface AttendanceRecord {
 // สำหรับการตอบกลับของ API ที่ส่งกลับมาหลายรายการ
 export interface AttendanceResponse {
   records: AttendanceRecord[];
+  page: number;
+  limit: number;
   total: number;
+  total_pages: number;
 }
 
 // สำหรับการส่งข้อมูล check-in/check-out
