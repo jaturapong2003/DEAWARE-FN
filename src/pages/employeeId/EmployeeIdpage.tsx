@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-// import { useQuery } from '@tanstack/react-query';
-// import keycloak from '@/config/keycloak';
-// import { fetchWithAuth } from '@/config/fetctWithAuth';
 import type { AttendanceRecord } from '@/@types/Attendance';
+import type { DateRange } from 'react-day-picker';
 import type { EmployeesList } from '@/@types/Employees';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { getInitials } from '@/lib/helper';
 import LoadingPage from '@/components/common/LoadingPage';
 import PaginationControll from '@/components/filter/PaginationControll';
+import DateRangeFilter from '@/components/filter/DateRangeFilter';
 import AttendanceCard from '@/components/common/AttendanceCard';
 import {
   ArrowLeft,
@@ -39,6 +38,7 @@ function EmployeeIdPage() {
   const location = useLocation();
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   // รับข้อมูลพนักงานจาก route state (ส่งมาจาก EmployeesPage)
   const employee = (location.state as { employee?: EmployeesList })?.employee;
@@ -59,7 +59,7 @@ function EmployeeIdPage() {
 
   // ===== MOCK DATA (ลบออกเมื่อ backend พร้อม) =====
   const allMockRecords: AttendanceRecord[] = Array.from(
-    { length: 25 },
+    { length: 15 },
     (_, i) => {
       const date = new Date(2026, 1, 22 - i); // 22 ก.พ. ย้อนกลับไป
       const checkInHour = 7 + (i % 2); // สลับ 07, 08
@@ -98,10 +98,24 @@ function EmployeeIdPage() {
     }
   );
 
+  // กรองตามช่วงวันที่
+  const filteredRecords = allMockRecords.filter((record) => {
+    if (!dateRange?.from) return true;
+    const recDate = new Date(record.check_in!);
+    const start = new Date(dateRange.from);
+    start.setHours(0, 0, 0, 0);
+    if (dateRange.to) {
+      const end = new Date(dateRange.to);
+      end.setHours(23, 59, 59, 999);
+      return recDate >= start && recDate <= end;
+    }
+    return recDate >= start;
+  });
+
   // จำลอง pagination ฝั่ง client
-  const totalRecords = allMockRecords.length;
+  const totalRecords = filteredRecords.length;
   const totalPages = Math.ceil(totalRecords / limit);
-  const paginatedRecords = allMockRecords.slice(
+  const paginatedRecords = filteredRecords.slice(
     (page - 1) * limit,
     page * limit
   );
@@ -193,79 +207,64 @@ function EmployeeIdPage() {
 
           {/* ข้อมูลรายละเอียด */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* User ID */}
-            <div className="bg-muted/50 flex items-center gap-3 rounded-lg p-3">
-              <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-                <User className="h-5 w-5" />
+            {[
+              { icon: User, label: 'User ID', value: employee.user_id },
+              { icon: Mail, label: 'อีเมล', value: employee.email },
+              {
+                icon: Phone,
+                label: 'เบอร์โทร',
+                value: employee.phone_number || 'ไม่ระบุ',
+              },
+              {
+                icon: Briefcase,
+                label: 'ตำแหน่ง',
+                value: employee.position || 'ไม่ระบุ',
+              },
+            ].map((field) => (
+              <div
+                key={field.label}
+                className="bg-muted/50 flex items-center gap-3 rounded-lg p-3"
+              >
+                <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                  <field.icon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-muted-foreground text-xs">{field.label}</p>
+                  <p
+                    className="truncate text-sm font-medium"
+                    title={field.value}
+                  >
+                    {field.value}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-muted-foreground text-xs">User ID</p>
-                <p
-                  className="truncate text-sm font-medium"
-                  title={employee.user_id}
-                >
-                  {employee.user_id}
-                </p>
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="bg-muted/50 flex items-center gap-3 rounded-lg p-3">
-              <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-                <Mail className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-muted-foreground text-xs">อีเมล</p>
-                <p
-                  className="truncate text-sm font-medium"
-                  title={employee.email}
-                >
-                  {employee.email}
-                </p>
-              </div>
-            </div>
-
-            {/* Phone */}
-            <div className="bg-muted/50 flex items-center gap-3 rounded-lg p-3">
-              <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-                <Phone className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-muted-foreground text-xs">เบอร์โทร</p>
-                <p className="text-sm font-medium">
-                  {employee.phone_number || 'ไม่ระบุ'}
-                </p>
-              </div>
-            </div>
-
-            {/* Position */}
-            <div className="bg-muted/50 flex items-center gap-3 rounded-lg p-3">
-              <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-                <Briefcase className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-muted-foreground text-xs">ตำแหน่ง</p>
-                <p className="text-sm font-medium">
-                  {employee.position || 'ไม่ระบุ'}
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* 📋 ประวัติการเข้างาน */}
       <div className="bg-card rounded-lg border p-6">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg">
-            <CalendarDays className="h-5 w-5" />
+        <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg">
+              <CalendarDays className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">ประวัติการเข้างาน</h2>
+              <p className="text-muted-foreground text-sm">
+                {data ? `ทั้งหมด ${data.total} รายการ` : 'กำลังโหลด...'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold">ประวัติการเข้างาน</h2>
-            <p className="text-muted-foreground text-sm">
-              {data ? `ทั้งหมด ${data.total} รายการ` : 'กำลังโหลด...'}
-            </p>
-          </div>
+          {/* เลือกช่วงวันที่ */}
+          <DateRangeFilter
+            dateRange={dateRange}
+            onDateRangeChange={(range) => {
+              setDateRange(range);
+              setPage(1);
+            }}
+          />
         </div>
 
         {/* Stats */}
