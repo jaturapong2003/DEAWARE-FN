@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import type { EmployeesList } from '@/@types/Employees';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -8,9 +9,8 @@ import { Mail, Phone, Search, Users } from 'lucide-react';
 import { getInitials } from '@/lib/helper';
 import { fetchWithAuth } from '@/config/fetctWithAuth';
 import keycloak from '@/config/keycloak';
-import ErrorPage from '@/components/common/ErrorPage';
 import LoadingPage from '@/components/common/LoadingPage';
-import { useQuery } from '@tanstack/react-query';
+import ErrorPage from '@/components/common/ErrorPage';
 
 // Employee Card
 const EmployeeCard: React.FC<{ employee: EmployeesList }> = ({ employee }) => {

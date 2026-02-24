@@ -158,7 +158,7 @@ function AttendanceMePage() {
           </p>
         </div>
       )}
-      {data && data.total_pages > 1 && (
+      {data && (
         <div className="flex items-center justify-center">
           <PaginationControll
             page={data.page}
