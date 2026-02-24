@@ -17,9 +17,9 @@ export const navigationItems = [
     url: '/employees',
     icon: UsersIcon,
   },
-  {
-    title: 'ประวัติทั้งหมด',
-    url: '/history',
-    icon: UsersIcon,
-  },
+  // {
+  //   title: 'ประวัติทั้งหมด',
+  //   url: '/history',
+  //   icon: UsersIcon,
+  // },
 ];

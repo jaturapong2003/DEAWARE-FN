@@ -18,7 +18,7 @@ const DeviceIcon: React.FC<{ device: string | null }> = ({ device }) => {
   switch (device) {
     case 'web_app':
       return <Monitor className="h-4 w-4" />;
-    case 'camera':
+    case 'cam-01':
       return <Camera className="h-4 w-4" />;
     default:
       return <Ban className="h-4 w-4" />;
@@ -30,8 +30,8 @@ const getDeviceName = (device: string | null): string => {
   switch (device) {
     case 'web_app':
       return 'เว็บแอพ';
-    case 'camera':
-      return 'กล้อง';
+    case 'cam-01':
+      return 'กล้อง 1';
     default:
       return 'ไม่ระบุ';
   }
@@ -159,7 +159,7 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
 
         {/* ชั่วโมงทำงาน */}
         <div className="mt-4 border-t pt-4">
-          <div className="from-primary/10 to-primary/5 border-primary/20 flex items-center justify-between rounded-lg border bg-gradient-to-r px-4 py-3">
+          <div className="from-primary/10 to-primary/5 border-primary/20 flex items-center justify-between rounded-lg border bg-linear-to-r px-4 py-3">
             <div className="flex items-center gap-2">
               <Clock className="text-primary h-5 w-5" />
               <span className="text-sm font-medium">ชั่วโมงทำงานรวม</span>
