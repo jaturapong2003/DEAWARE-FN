@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { EmployeesList } from '@/@types/Employees';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -36,8 +37,15 @@ const data: EmployeesList[] = [
 
 // Employee Card
 const EmployeeCard: React.FC<{ employee: EmployeesList }> = ({ employee }) => {
+  const navigate = useNavigate();
+
   return (
-    <div className="bg-card hover:border-primary/50 group overflow-hidden rounded-lg border transition-all duration-200 hover:shadow-md">
+    <div
+      onClick={() =>
+        navigate(`/employees/${employee.user_id}`, { state: { employee } })
+      }
+      className="bg-card hover:border-primary/50 group cursor-pointer overflow-hidden rounded-lg border transition-all duration-200 hover:shadow-md"
+    >
       <div className="p-6">
         <div className="flex flex-col items-center text-center">
           {/* Avatar */}

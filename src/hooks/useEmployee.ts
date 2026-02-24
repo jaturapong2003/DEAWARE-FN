@@ -1,20 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useApi } from '@/hooks/useApi';
+import type { AccountInfo } from '@/@types/Account';
+import apiClient from '@/lib/apiClient';
 
-// ประเภทข้อมูลพนักงาน (ตาม API Response จริง)
-interface EmployeeProfile {
-  auth_user_id: string;
-  user_name: string;
-  email: string;
-  display_name: string;
-  phone_number: string;
-  position: string;
-  url_image: string;
-  face_embedding_count: number;
-  has_face_embedding: boolean;
-  created_at: string;
-  updated_at: string;
-}
 
 /**
  * Hook สำหรับดึงข้อมูลพนักงานจาก API (ใช้ React Query)
@@ -23,12 +10,11 @@ interface EmployeeProfile {
  * - Retry ถ้า request ล้มเหลว
  */
 export const useEmployee = () => {
-  const { get } = useApi();
 
-  const query = useQuery<EmployeeProfile>({
+  const query = useQuery<AccountInfo>({
     queryKey: ['employee', 'me'],
     queryFn: async () => {
-      const response = await get<EmployeeProfile>('/employee/me');
+      const response = await apiClient.get<AccountInfo>('/employee/me');
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // Cache 5 นาที
