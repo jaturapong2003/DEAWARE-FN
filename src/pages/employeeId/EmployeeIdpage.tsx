@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
 import type { AttendanceRecord } from '@/@types/Attendance';
 import type { DateRange } from 'react-day-picker';
 import type { EmployeesList } from '@/@types/Employees';
@@ -8,26 +9,23 @@ import { Badge } from '@/components/ui/badge';
 import { getInitials } from '@/lib/helper';
 import LoadingPage from '@/components/common/LoadingPage';
 import PaginationControll from '@/components/filter/PaginationControll';
-import DateRangeFilter from '@/components/filter/DateRangeFilter';
 import AttendanceCard from '@/components/common/AttendanceCard';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
   Mail,
   Phone,
-  Briefcase,
   User,
   CalendarDays,
   AlertTriangle,
+  UserRoundCog,
 } from 'lucide-react';
-
-// Response type สำหรับ /attendance/history/{employee_id}
-interface HistoryResponse {
-  records: AttendanceRecord[];
-  page: number;
-  limit: number;
-  total: number;
-  total_pages: number;
-}
 
 /**
  * หน้ารายละเอียดพนักงาน - แสดงโปรไฟล์และประวัติการเข้างาน
@@ -57,79 +55,40 @@ function EmployeeIdPage() {
     };
   }, [employee?.url_image]);
 
-  // ===== MOCK DATA (ลบออกเมื่อ backend พร้อม) =====
-  const allMockRecords: AttendanceRecord[] = Array.from(
-    { length: 15 },
-    (_, i) => {
-      const date = new Date(2026, 1, 22 - i); // 22 ก.พ. ย้อนกลับไป
-      const checkInHour = 7 + (i % 2); // สลับ 07, 08
-      const checkInMin = (i * 7 + 5) % 60; // 5, 12, 19, 26, ...
-      const checkOutHour = 16 + (i % 2); // สลับ 16, 17
-      const checkOutMin = (i * 11 + 10) % 60; // 10, 21, 32, 43, ...
-      const hasCheckOut = i !== 0; // วันแรก (วันนี้) ยังไม่ออกงาน
-      const workHrs = hasCheckOut
-        ? (
-            checkOutHour +
-            checkOutMin / 60 -
-            (checkInHour + checkInMin / 60)
-          ).toFixed(2)
-        : '0.00';
-      const devices = ['web_app', 'camera'] as const;
-      const inDevice = devices[i % 2];
-      const outDevice = devices[(i + 1) % 2];
-      const confidence = +(0.85 + ((i * 3) % 14) / 100).toFixed(2);
+  // ดึงประวัติการเข้างานจาก API
+  const {
+    records,
+    total,
+    totalPages,
+    loading: isLoading,
+    error,
+  } = useEmployeeAttendanceHistory(id, page, limit);
 
-      const pad = (n: number) => n.toString().padStart(2, '0');
-      const dateStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  // กรองตามช่วงวันที่ (client-side)
+  const filteredRecords = useMemo(() => {
+    if (!dateRange?.from) return records;
+    return records.filter((record) => {
+      const recDate = new Date(record.check_in!);
+      const start = new Date(dateRange.from!);
+      start.setHours(0, 0, 0, 0);
+      if (dateRange.to) {
+        const end = new Date(dateRange.to);
+        end.setHours(23, 59, 59, 999);
+        return recDate >= start && recDate <= end;
+      }
+      return recDate >= start;
+    });
+  }, [records, dateRange]);
 
-      return {
-        id: String(i + 1),
-        employee_id: id || '',
-        check_in: `${dateStr}T${pad(checkInHour)}:${pad(checkInMin)}:00Z`,
-        check_out: hasCheckOut
-          ? `${dateStr}T${pad(checkOutHour)}:${pad(checkOutMin)}:00Z`
-          : null,
-        work_hours: workHrs,
-        check_in_device: inDevice,
-        check_in_confidence: confidence,
-        check_out_device: hasCheckOut ? outDevice : null,
-        check_out_confidence: hasCheckOut ? confidence : null,
-      };
-    }
-  );
-
-  // กรองตามช่วงวันที่
-  const filteredRecords = allMockRecords.filter((record) => {
-    if (!dateRange?.from) return true;
-    const recDate = new Date(record.check_in!);
-    const start = new Date(dateRange.from);
-    start.setHours(0, 0, 0, 0);
-    if (dateRange.to) {
-      const end = new Date(dateRange.to);
-      end.setHours(23, 59, 59, 999);
-      return recDate >= start && recDate <= end;
-    }
-    return recDate >= start;
-  });
-
-  // จำลอง pagination ฝั่ง client
-  const totalRecords = filteredRecords.length;
-  const totalPages = Math.ceil(totalRecords / limit);
-  const paginatedRecords = filteredRecords.slice(
-    (page - 1) * limit,
-    page * limit
-  );
-
-  const data: HistoryResponse = {
-    records: paginatedRecords,
+  const data = {
+    records: filteredRecords,
     page,
     limit,
-    total: totalRecords,
-    total_pages: totalPages,
+    total: dateRange?.from ? filteredRecords.length : total,
+    total_pages: dateRange?.from
+      ? Math.ceil(filteredRecords.length / limit)
+      : totalPages,
   };
-  const isLoading = false;
-  const error = null;
-  // ===== END MOCK DATA =====
 
   // 🔙 ปุ่มกลับ
   const handleGoBack = () => {
@@ -199,7 +158,8 @@ function EmployeeIdPage() {
               <h1 className="text-xl font-bold sm:text-2xl">
                 {employee.display_name || 'ไม่มีชื่อ'}
               </h1>
-              <Badge variant="secondary" className="mt-1">
+              <Badge variant="secondary" className="mt-1 gap-1">
+                <UserRoundCog className="h-3.5 w-3.5" />
                 {employee.position || 'พนักงาน'}
               </Badge>
             </div>
@@ -207,38 +167,69 @@ function EmployeeIdPage() {
 
           {/* ข้อมูลรายละเอียด */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {[
-              { icon: User, label: 'User ID', value: employee.user_id },
-              { icon: Mail, label: 'อีเมล', value: employee.email },
-              {
-                icon: Phone,
-                label: 'เบอร์โทร',
-                value: employee.phone_number || 'ไม่ระบุ',
-              },
-              {
-                icon: Briefcase,
-                label: 'ตำแหน่ง',
-                value: employee.position || 'ไม่ระบุ',
-              },
-            ].map((field) => (
-              <div
-                key={field.label}
-                className="bg-muted/50 flex items-center gap-3 rounded-lg p-3"
-              >
-                <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-                  <field.icon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-muted-foreground text-xs">{field.label}</p>
-                  <p
-                    className="truncate text-sm font-medium"
-                    title={field.value}
-                  >
-                    {field.value}
-                  </p>
-                </div>
+            {/* User ID */}
+            <div className="group bg-muted/50 hover:bg-muted/80 flex cursor-default items-center gap-3 rounded-lg p-3 transition-colors duration-200">
+              <div className="bg-primary/10 group-hover:bg-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110">
+                <User className="text-primary/60 group-hover:text-primary h-5 w-5 transition-colors duration-200" />
               </div>
-            ))}
+              <div className="min-w-0">
+                <p className="text-muted-foreground text-xs">User ID</p>
+                <p
+                  className="truncate text-sm font-medium"
+                  title={employee.user_id}
+                >
+                  {employee.user_id}
+                </p>
+              </div>
+            </div>
+
+            {/* อีเมล */}
+            <div className="group bg-muted/50 hover:bg-muted/80 flex cursor-default items-center gap-3 rounded-lg p-3 transition-colors duration-200">
+              <div className="bg-chart-2/10 group-hover:bg-chart-2/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110">
+                <Mail className="text-chart-2/60 group-hover:text-chart-2 h-5 w-5 transition-colors duration-200" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-muted-foreground text-xs">อีเมล</p>
+                <p
+                  className="truncate text-sm font-medium"
+                  title={employee.email}
+                >
+                  {employee.email}
+                </p>
+              </div>
+            </div>
+
+            {/* เบอร์โทร */}
+            <div className="group bg-muted/50 hover:bg-muted/80 flex cursor-default items-center gap-3 rounded-lg p-3 transition-colors duration-200">
+              <div className="bg-chart-4/10 group-hover:bg-chart-4/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110">
+                <Phone className="text-chart-4/60 group-hover:text-chart-4 h-5 w-5 transition-colors duration-200" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-muted-foreground text-xs">เบอร์โทร</p>
+                <p
+                  className="truncate text-sm font-medium"
+                  title={employee.phone_number || 'ไม่ระบุ'}
+                >
+                  {employee.phone_number || 'ไม่ระบุ'}
+                </p>
+              </div>
+            </div>
+
+            {/* ตำแหน่ง */}
+            <div className="group bg-muted/50 hover:bg-muted/80 flex cursor-default items-center gap-3 rounded-lg p-3 transition-colors duration-200">
+              <div className="bg-chart-5/10 group-hover:bg-chart-5/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110">
+                <UserRoundCog className="text-chart-5/60 group-hover:text-chart-5 h-5 w-5 transition-colors duration-200" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-muted-foreground text-xs">ตำแหน่ง</p>
+                <p
+                  className="truncate text-sm font-medium"
+                  title={employee.position || 'ไม่ระบุ'}
+                >
+                  {employee.position || 'ไม่ระบุ'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -257,14 +248,70 @@ function EmployeeIdPage() {
               </p>
             </div>
           </div>
-          {/* เลือกช่วงวันที่ */}
-          <DateRangeFilter
-            dateRange={dateRange}
-            onDateRangeChange={(range) => {
-              setDateRange(range);
-              setPage(1);
-            }}
-          />
+
+          {/* 📅 เลือกช่วงวันที่ */}
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="justify-start text-left font-normal"
+                >
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <span>
+                        {dateRange.from.toLocaleDateString('th-TH', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                        {' - '}
+                        {dateRange.to.toLocaleDateString('th-TH', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    ) : (
+                      <span>
+                        {dateRange.from.toLocaleDateString('th-TH', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    )
+                  ) : (
+                    <span>เลือกช่วงวันที่</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={(range) => {
+                    setDateRange(range);
+                    setPage(1);
+                  }}
+                  captionLayout="dropdown"
+                />
+              </PopoverContent>
+            </Popover>
+            {dateRange?.from && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDateRange(undefined);
+                  setPage(1);
+                }}
+                className="text-muted-foreground h-8 px-2 text-xs"
+              >
+                ล้าง
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Stats */}
