@@ -8,6 +8,7 @@ const HomePage = lazy(() => import('../pages/Home/HomePage'));
 const HistoryPage = lazy(() => import('../pages/HistoryPage'));
 const ApiTestPage = lazy(() => import('../ApiTestPage'));
 const EmployeesPage = lazy(() => import('@/pages/Employee/EmployeesPage'));
+const EmployeeIdPage = lazy(() => import('@/pages/employeeId/EmployeeIdpage'));
 const AttendanceMePage = lazy(
   () => import('@/pages/AttendanceMe/AttendanceMePage')
 );
@@ -27,8 +28,10 @@ const AppRoutes: React.FC = () => {
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/attendance" element={<AttendanceMePage />} />
             <Route path="/api-test" element={<ApiTestPage />} />
-            <Route path="/employees" element={<EmployeesPage />} />
-            <Route path="/employees/:id" element={<EmployeesPage />} />
+            <Route path="/employees">
+              <Route index element={<EmployeesPage />} />
+              <Route path=":id" element={<EmployeeIdPage />} />
+            </Route>
             <Route path="*" element={<div>404 Not Found</div>} />
           </Routes>
         </Suspense>
