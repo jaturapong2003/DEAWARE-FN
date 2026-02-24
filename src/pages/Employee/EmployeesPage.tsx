@@ -6,34 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Mail, Phone, Search, Users } from 'lucide-react';
 import { getInitials } from '@/lib/helper';
-
-const data: EmployeesList[] = [
-  {
-    user_id: '25135f88-6235-4ce9-9160-dfd38b24a1f9',
-    email: 'arutatheextra7@gmail.com',
-    display_name: 'J3k CHINA',
-    phone_number: '',
-    position: '',
-    url_image: '',
-  },
-  {
-    user_id: '4c32896b-6309-4a94-ae63-93d234232b79',
-    email: '67035003@kmitl.ac.th',
-    display_name: 'Jaturapong wiwat',
-    phone_number: '',
-    position: '',
-    url_image: '',
-  },
-  {
-    user_id: '79c95bc9-7f3d-45d5-a618-2fed3821a17c',
-    email: 'forsythe1103@gmail.com1',
-    display_name: 'theeraphat2 kanbua3',
-    phone_number: '0812345678',
-    position: 'Software Engineer',
-    url_image:
-      'http://100.94.239.54:8888/profile/79c95bc9-7f3d-45d5-a618-2fed3821a17c.jpg',
-  },
-];
+import { fetchWithAuth } from '@/config/fetctWithAuth';
+import keycloak from '@/config/keycloak';
+import ErrorPage from '@/components/common/ErrorPage';
+import LoadingPage from '@/components/common/LoadingPage';
+import { useQuery } from '@tanstack/react-query';
 
 // Employee Card
 const EmployeeCard: React.FC<{ employee: EmployeesList }> = ({ employee }) => {
@@ -97,8 +74,17 @@ const EmployeeCard: React.FC<{ employee: EmployeesList }> = ({ employee }) => {
 function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
+  const { data, isLoading, error } = useQuery<EmployeesList[]>({
+    queryKey: ['employee/list'],
+    queryFn: async () => fetchWithAuth<EmployeesList[]>(`/api/employee/list`),
+    enabled: keycloak.authenticated,
+  });
+
+  if (error) return <ErrorPage />;
+  if (isLoading) return <LoadingPage message="กำลังโหลดข้อมูลพนักงาน..." />;
+
   // กรองข้อมูลพนักงานตามคำค้นหา
-  const filteredEmployees = data.filter(
+  const filteredEmployees = (data || []).filter(
     (employee) =>
       employee.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -118,7 +104,7 @@ function EmployeesPage() {
             <div>
               <h1 className="text-2xl font-bold">รายชื่อพนักงาน</h1>
               <p className="text-muted-foreground text-sm">
-                ทั้งหมด {data.length} คน
+                ทั้งหมด {(data || []).length} คน
               </p>
             </div>
           </div>
