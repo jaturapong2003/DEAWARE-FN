@@ -1,4 +1,3 @@
-import { X } from "lucide-react"
 import { useState } from "react"
 
 interface Props {
@@ -21,7 +20,7 @@ export default function SettingModal({ open, onClose }: Props) {
       />
 
       {/* Panel */}
-      <div className="relative w-[900px] max-w-full h-full bg-neutral-900 text-white shadow-2xl flex animate-slideIn">
+      <div className="relative w-255 max-w-full h-full bg-neutral-900 text-white shadow-2xl flex animate-slideIn">
 
         {/* Sidebar */}
         <div className="w-64 border-r border-neutral-700 p-4 space-y-2">
