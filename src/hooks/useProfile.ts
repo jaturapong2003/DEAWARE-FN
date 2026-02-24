@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useKeycloak } from '@react-keycloak/web';
-import { fetchWithAuth } from '@/config/fetctWithAuth';
+import apiClient from '@/lib/apiClient';
 import useAuthStore from '@/stores/authStore';
 import type { AccountInfo } from '@/@types/Account';
 import type { KeycloakProfile } from 'keycloak-js';
@@ -48,7 +48,10 @@ export const useProfile = () => {
   // Query employee data with auto-update store
   const { data, isLoading, error, refetch } = useQuery<AccountInfo>({
     queryKey: ['employee', 'me'],
-    queryFn: async () => fetchWithAuth<AccountInfo>('/api/employee/me'),
+    queryFn: async () => {
+      const response = await apiClient.get<AccountInfo>('/employee/me');
+      return response.data;
+    },
     enabled: keycloak.authenticated,
     retry: false,
     staleTime: 1000 * 60 * 5,

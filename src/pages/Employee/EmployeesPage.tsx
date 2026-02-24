@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Mail, Phone, Search, Users } from 'lucide-react';
 import { getInitials } from '@/lib/helper';
-import { fetchWithAuth } from '@/config/fetctWithAuth';
+import apiClient from '@/lib/apiClient';
 import keycloak from '@/config/keycloak';
 import LoadingPage from '@/components/common/LoadingPage';
 import ErrorPage from '@/components/common/ErrorPage';
@@ -76,7 +76,10 @@ function EmployeesPage() {
 
   const { data, isLoading, error } = useQuery<EmployeesList[]>({
     queryKey: ['employee/list'],
-    queryFn: async () => fetchWithAuth<EmployeesList[]>(`/api/employee/list`),
+    queryFn: async () => {
+      const response = await apiClient.get<EmployeesList[]>('/employee/list');
+      return response.data;
+    },
     enabled: keycloak.authenticated,
   });
 

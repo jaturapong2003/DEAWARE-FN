@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchWithAuth } from '@/config/fetctWithAuth';
+import apiClient from '@/lib/apiClient';
 import type { AttendanceSingleResponse } from '@/@types/Attendance';
 
 // error response
@@ -25,13 +25,11 @@ export const useAttendance = (): UseAttendanceHook => {
 
   const checkInMutation = useMutation<AttendanceSingleResponse, Error>({
     mutationFn: async () => {
-      return await fetchWithAuth<AttendanceSingleResponse>(
-        '/api/attendance/check-in',
-        {
-          method: 'POST',
-          body: JSON.stringify({ device: 'web_app', confidence: 1 }),
-        }
+      const response = await apiClient.post<AttendanceSingleResponse>(
+        '/attendance/check-in',
+        { device: 'web_app', confidence: 1 }
       );
+      return response.data;
     },
     onSuccess: () => {
       // Invalidate related queries
@@ -42,13 +40,11 @@ export const useAttendance = (): UseAttendanceHook => {
   // Mutation สำหรับ Check-out
   const checkOutMutation = useMutation<AttendanceSingleResponse, Error>({
     mutationFn: async () => {
-      return await fetchWithAuth<AttendanceSingleResponse>(
-        '/api/attendance/check-out',
-        {
-          method: 'POST',
-          body: JSON.stringify({ device: 'web_app', confidence: 1 }),
-        }
+      const response = await apiClient.post<AttendanceSingleResponse>(
+        '/attendance/check-out',
+        { device: 'web_app', confidence: 1 }
       );
+      return response.data;
     },
     onSuccess: () => {
       // Invalidate related queries

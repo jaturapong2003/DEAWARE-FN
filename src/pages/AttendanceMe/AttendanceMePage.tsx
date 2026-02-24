@@ -4,7 +4,7 @@ import type { DateRange } from 'react-day-picker';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import keycloak from '@/config/keycloak';
-import { fetchWithAuth } from '@/config/fetctWithAuth';
+import apiClient from '@/lib/apiClient';
 import LoadingPage from '@/components/common/LoadingPage';
 import ErrorPage from '@/components/common/ErrorPage';
 import { Calendar as DatePicker } from '@/components/ui/calendar';
@@ -25,10 +25,15 @@ function AttendanceMePage() {
 
   const { data, isLoading, error } = useQuery<AttendanceResponse>({
     queryKey: ['history/me', page, limit],
-    queryFn: async () =>
-      fetchWithAuth<AttendanceResponse>(
-        `/api/attendance/me?page=${page}&limit=${limit}`
-      ),
+    queryFn: async () => {
+      const response = await apiClient.get<AttendanceResponse>(
+        '/attendance/me',
+        {
+          params: { page, limit },
+        }
+      );
+      return response.data;
+    },
     enabled: keycloak.authenticated,
   });
 
