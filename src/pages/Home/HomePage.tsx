@@ -22,7 +22,7 @@ const HomePage: React.FC = () => {
   // Memoize profile display values
   const profileData = useMemo(
     () => ({
-      displayName: profile?.display_name || profile?.user_name || 'ไม่ระบุชื่อ',
+      displayName: profile?.display_name || profile?.user_name || '-',
       email: profile?.email || '-',
       urlImage: profile?.url_image || '',
       userName: profile?.user_name || '-',

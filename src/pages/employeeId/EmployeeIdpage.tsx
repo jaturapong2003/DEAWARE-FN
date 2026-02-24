@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
 import type { AttendanceRecord } from '@/@types/Attendance';
@@ -55,39 +55,27 @@ function EmployeeIdPage() {
     };
   }, [employee?.url_image]);
 
-  // ดึงประวัติการเข้างานจาก API
+  // ดึงประวัติการเข้างานจาก API พร้อมส่ง start_date, end_date
   const {
     records,
     total,
     totalPages,
     loading: isLoading,
     error,
-  } = useEmployeeAttendanceHistory(id, page, limit);
-
-  // กรองตามช่วงวันที่ (client-side)
-  const filteredRecords = useMemo(() => {
-    if (!dateRange?.from) return records;
-    return records.filter((record) => {
-      const recDate = new Date(record.check_in!);
-      const start = new Date(dateRange.from!);
-      start.setHours(0, 0, 0, 0);
-      if (dateRange.to) {
-        const end = new Date(dateRange.to);
-        end.setHours(23, 59, 59, 999);
-        return recDate >= start && recDate <= end;
-      }
-      return recDate >= start;
-    });
-  }, [records, dateRange]);
-
-  const data = {
-    records: filteredRecords,
+  } = useEmployeeAttendanceHistory(
+    id,
     page,
     limit,
-    total: dateRange?.from ? filteredRecords.length : total,
-    total_pages: dateRange?.from
-      ? Math.ceil(filteredRecords.length / limit)
-      : totalPages,
+    dateRange?.from,
+    dateRange?.to ?? dateRange?.from
+  );
+
+  const data = {
+    records,
+    page,
+    limit,
+    total,
+    total_pages: totalPages,
   };
 
   // 🔙 ปุ่มกลับ
@@ -208,9 +196,9 @@ function EmployeeIdPage() {
                 <p className="text-muted-foreground text-xs">เบอร์โทร</p>
                 <p
                   className="truncate text-sm font-medium"
-                  title={employee.phone_number || 'ไม่ระบุ'}
+                  title={employee.phone_number || '-'}
                 >
-                  {employee.phone_number || 'ไม่ระบุ'}
+                  {employee.phone_number || '-'}
                 </p>
               </div>
             </div>
@@ -224,9 +212,9 @@ function EmployeeIdPage() {
                 <p className="text-muted-foreground text-xs">ตำแหน่ง</p>
                 <p
                   className="truncate text-sm font-medium"
-                  title={employee.position || 'ไม่ระบุ'}
+                  title={employee.position || '-'}
                 >
-                  {employee.position || 'ไม่ระบุ'}
+                  {employee.position || '-'}
                 </p>
               </div>
             </div>

@@ -33,7 +33,7 @@ const getDeviceName = (device: string | null): string => {
     case 'cam-01':
       return 'กล้อง 1';
     default:
-      return 'ไม่ระบุ';
+      return '-';
   }
 };
 
