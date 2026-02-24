@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import PaginationControll from '@/components/filter/PaginationControll';
 import AttendanceCard from '../../components/common/AttendanceCard';
+import { formatDateToISO } from '@/lib/date';
 
 // Main AttendanceMePage
 function AttendanceMePage() {
@@ -24,11 +25,24 @@ function AttendanceMePage() {
   const [limit, setLimit] = useState<number>(10);
 
   const { data, isLoading, error } = useQuery<AttendanceResponse>({
-    queryKey: ['history/me', page, limit],
-    queryFn: async () =>
-      fetchWithAuth<AttendanceResponse>(
-        `/api/attendance/me?page=${page}&limit=${limit}`
-      ),
+    queryKey: ['history/me', page, limit, dateRange],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      if (dateRange?.from) {
+        params.append('start_date', formatDateToISO(dateRange.from));
+      }
+      if (dateRange?.to) {
+        params.append('end_date', formatDateToISO(dateRange.to));
+      }
+
+      return fetchWithAuth<AttendanceResponse>(
+        `/api/attendance/me?${params.toString()}`
+      );
+    },
     enabled: keycloak.authenticated,
   });
 
@@ -43,24 +57,6 @@ function AttendanceMePage() {
   const completedRecords = (data?.records || []).filter(
     (r: { check_out: string | null }) => !!r.check_out
   ).length;
-
-  // filter by selected date range (if any)
-  const filteredRecords = (data?.records || []).filter(
-    (record: { check_in: string | null }) => {
-      if (!dateRange || !dateRange.from) return true;
-      if (!record.check_in) return false;
-      const rec = new Date(record.check_in);
-      const start = new Date(dateRange.from);
-      const end = dateRange.to
-        ? new Date(dateRange.to)
-        : new Date(dateRange.from);
-
-      // normalize time portion
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-      return rec >= start && rec <= end;
-    }
-  );
 
   return (
     <div className="space-y-6">
@@ -108,9 +104,9 @@ function AttendanceMePage() {
                     selected={dateRange}
                     onSelect={setDateRange}
                     numberOfMonths={1}
-                    disabled={(date: Date) =>
-                      date > new Date() || date < new Date('1900-01-01')
-                    }
+                    // disabled={(date: Date) =>
+                    //   date > new Date() || date < new Date('1900-01-01')
+                    // }
                   />
                 </PopoverContent>
               </Popover>
@@ -145,9 +141,9 @@ function AttendanceMePage() {
       </div>
 
       {/* Attendance Records */}
-      {filteredRecords.length > 0 ? (
+      {(data?.records || []).length > 0 ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          {filteredRecords.map((record: AttendanceRecord) => (
+          {(data?.records || []).map((record: AttendanceRecord) => (
             <AttendanceCard key={record.id} record={record} />
           ))}
         </div>
