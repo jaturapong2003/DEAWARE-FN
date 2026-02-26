@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
+import useEmployeeById from '@/hooks/useEmployeeById';
 import type { AttendanceRecord } from '@/@types/Attendance';
 import type { DateRange } from 'react-day-picker';
 import type { EmployeesList } from '@/@types/Employees';
@@ -39,7 +40,14 @@ function EmployeeIdPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   // รับข้อมูลพนักงานจาก route state (ส่งมาจาก EmployeesPage)
-  const employee = (location.state as { employee?: EmployeesList })?.employee;
+  const stateEmployee = (location.state as { employee?: EmployeesList })
+    ?.employee;
+
+  // ใช้ hook เพื่อ fetch ข้อมูลจาก API ถ้าไม่มี location.state (เช่น refresh หน้า)
+  const { employee, loading: employeeLoading } = useEmployeeById(
+    id,
+    stateEmployee
+  );
 
   // เช็คว่ารูปโปรไฟล์โหลดได้ไหม (ไม่ error ใน console)
   const [imgReady, setImgReady] = useState(false);
@@ -83,7 +91,12 @@ function EmployeeIdPage() {
     navigate('/employees');
   };
 
-  // ถ้าไม่มีข้อมูลพนักงาน (เข้า URL ตรงๆ ไม่ผ่านหน้า list)
+  // กำลังโหลดข้อมูลพนักงาน
+  if (employeeLoading) {
+    return <LoadingPage message="กำลังโหลดข้อมูลพนักงาน..." />;
+  }
+
+  // ถ้าไม่มีข้อมูลพนักงาน (ไม่พบใน API)
   if (!employee) {
     return (
       <div className="space-y-6">
