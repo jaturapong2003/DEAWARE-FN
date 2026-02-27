@@ -26,7 +26,10 @@ import {
   CalendarDays,
   AlertTriangle,
   UserRoundCog,
+  BarChart3,
+  ClipboardList,
 } from 'lucide-react';
+import DashboardId from './Dashboard_Id';
 
 /**
  * หน้ารายละเอียดพนักงาน - แสดงโปรไฟล์และประวัติการเข้างาน
@@ -38,6 +41,9 @@ function EmployeeIdPage() {
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<'attendance' | 'dashboard'>(
+    'attendance'
+  );
 
   // รับข้อมูลพนักงานจาก route state (ส่งมาจาก EmployeesPage)
   const stateEmployee = (location.state as { employee?: EmployeesList })
@@ -235,19 +241,29 @@ function EmployeeIdPage() {
         </div>
       </div>
 
-      {/* 📋 ประวัติการเข้างาน */}
-      <div className="bg-card rounded-lg border p-6">
-        <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg">
-              <CalendarDays className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold">ประวัติการเข้างาน</h2>
-              <p className="text-muted-foreground text-sm">
-                {data ? `ทั้งหมด ${data.total} รายการ` : 'กำลังโหลด...'}
-              </p>
-            </div>
+      {/* === Header: Tab สลับ + เลือกช่วงวัน === */}
+      <div className="bg-card rounded-lg border p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          {/* Tab Buttons */}
+          <div className="bg-muted flex rounded-lg p-1">
+            <Button
+              variant={activeTab === 'attendance' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('attendance')}
+              className={`gap-2 text-xs ${activeTab === 'attendance' ? '' : 'hover:bg-background'}`}
+            >
+              <ClipboardList className="h-4 w-4" />
+              ประวัติการเข้างาน
+            </Button>
+            <Button
+              variant={activeTab === 'dashboard' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('dashboard')}
+              className={`gap-2 text-xs ${activeTab === 'dashboard' ? '' : 'hover:bg-background'}`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              แดชบอร์ด
+            </Button>
           </div>
 
           {/* 📅 เลือกช่วงวันที่ */}
@@ -288,15 +304,61 @@ function EmployeeIdPage() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="range"
-                  selected={dateRange}
-                  onSelect={(range) => {
-                    setDateRange(range);
-                    setPage(1);
-                  }}
-                  captionLayout="dropdown"
-                />
+                {/* สร้าง modifiers สำหรับวันที่มีข้อมูล */}
+                {(() => {
+                  const datesWithData: Date[] = [];
+                  const dateStrings = new Set<string>();
+
+                  records.forEach((r) => {
+                    if (r.check_in) {
+                      const date = new Date(r.check_in);
+                      datesWithData.push(date);
+                      // เก็บ format YYYY-MM-DD เพื่อใช้ใน CSS
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      dateStrings.add(`${year}-${month}-${day}`);
+                    }
+                  });
+
+                  return (
+                    <>
+                      <style>{`
+                        [data-slot="popover-content"] [data-day] {
+                          --day-date: attr(data-day);
+                        }
+                        ${Array.from(dateStrings)
+                          .map(
+                            (dateStr) =>
+                              `[data-day="${dateStr}"] {
+                                background-color: #dcfce7 !important;
+                                border: 2px solid #22c55e !important;
+                                border-radius: 6px !important;
+                                font-weight: 600 !important;
+                                color: #166534 !important;
+                              }
+                              @media (prefers-color-scheme: dark) {
+                                [data-day="${dateStr}"] {
+                                  background-color: #064e3b !important;
+                                  border: 2px solid #10b981 !important;
+                                  color: #86efac !important;
+                                }
+                              }`
+                          )
+                          .join('\n')}
+                      `}</style>
+                      <Calendar
+                        mode="range"
+                        selected={dateRange}
+                        onSelect={(range) => {
+                          setDateRange(range);
+                          setPage(1);
+                        }}
+                        captionLayout="dropdown"
+                      />
+                    </>
+                  );
+                })()}
               </PopoverContent>
             </Popover>
             {dateRange?.from && (
@@ -314,17 +376,25 @@ function EmployeeIdPage() {
             )}
           </div>
         </div>
+      </div>
 
-        {/* Stats */}
-        {data && (
-          <div className="mb-6 grid gap-4 sm:grid-cols-3">
-            <div className="bg-primary/5 rounded-lg p-4">
+      {/* === เนื้อหาสลับตาม Tab === */}
+
+      {activeTab === 'dashboard' ? (
+        /* 📊 แดชบอร์ด */
+        <DashboardId employee={employee} records={records} total={total} />
+      ) : (
+        /* 📋 ประวัติการเข้างาน */
+        <>
+          {/* Stats */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="bg-card bg-primary/5 rounded-lg border p-4">
               <div className="text-muted-foreground mb-1 text-sm">
                 บันทึกทั้งหมด
               </div>
               <div className="text-2xl font-bold">{data.total} ครั้ง</div>
             </div>
-            <div className="rounded-lg bg-green-50 p-4 dark:bg-green-950/20">
+            <div className="bg-card rounded-lg border bg-green-50 p-4 dark:bg-green-950/20">
               <div className="text-muted-foreground mb-1 text-sm">
                 กำลังทำงาน
               </div>
@@ -332,7 +402,7 @@ function EmployeeIdPage() {
                 {data.records.filter((r) => !r.check_out).length} ครั้ง
               </div>
             </div>
-            <div className="rounded-lg bg-orange-50 p-4 dark:bg-orange-950/20">
+            <div className="bg-card rounded-lg border bg-orange-50 p-4 dark:bg-orange-950/20">
               <div className="text-muted-foreground mb-1 text-sm">
                 สิ้นสุดแล้ว
               </div>
@@ -341,55 +411,57 @@ function EmployeeIdPage() {
               </div>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Attendance Records */}
-      {isLoading ? (
-        <LoadingPage
-          message="กำลังโหลดประวัติการเข้างาน..."
-          fullScreen={false}
-        />
-      ) : error ? (
-        <div className="bg-card rounded-lg border p-8 text-center">
-          <AlertTriangle className="mx-auto h-10 w-10 text-orange-500" />
-          <h3 className="mt-4 text-lg font-semibold">
-            ไม่สามารถโหลดประวัติการเข้างานได้
-          </h3>
-          <p className="text-muted-foreground mt-2 text-sm">
-            อาจยังไม่มีข้อมูลประวัติสำหรับพนักงานคนนี้
-          </p>
-        </div>
-      ) : data && data.records.length > 0 ? (
-        <>
-          <div className="grid gap-4 lg:grid-cols-2">
-            {data.records.map((record: AttendanceRecord) => (
-              <AttendanceCard key={record.id} record={record} />
-            ))}
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-center">
-            <PaginationControll
-              page={page}
-              totalPages={data.total_pages}
-              limit={limit}
-              onPageChange={(p) => setPage(p)}
-              onLimitChange={(l) => {
-                setLimit(l);
-                setPage(1);
-              }}
+          {/* Attendance Records */}
+          {isLoading ? (
+            <LoadingPage
+              message="กำลังโหลดประวัติการเข้างาน..."
+              fullScreen={false}
             />
-          </div>
+          ) : error ? (
+            <div className="bg-card rounded-lg border p-8 text-center">
+              <AlertTriangle className="mx-auto h-10 w-10 text-orange-500" />
+              <h3 className="mt-4 text-lg font-semibold">
+                ไม่สามารถโหลดประวัติการเข้างานได้
+              </h3>
+              <p className="text-muted-foreground mt-2 text-sm">
+                อาจยังไม่มีข้อมูลประวัติสำหรับพนักงานคนนี้
+              </p>
+            </div>
+          ) : data && data.records.length > 0 ? (
+            <>
+              <div className="grid gap-4 lg:grid-cols-2">
+                {data.records.map((record: AttendanceRecord) => (
+                  <AttendanceCard key={record.id} record={record} />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-center">
+                <PaginationControll
+                  page={page}
+                  totalPages={data.total_pages}
+                  limit={limit}
+                  onPageChange={(p) => setPage(p)}
+                  onLimitChange={(l) => {
+                    setLimit(l);
+                    setPage(1);
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="bg-card rounded-lg border p-8 text-center">
+              <CalendarDays className="text-muted-foreground mx-auto h-12 w-12" />
+              <h3 className="mt-4 text-lg font-semibold">
+                ไม่มีประวัติการเข้างาน
+              </h3>
+              <p className="text-muted-foreground mt-2 text-sm">
+                ยังไม่มีข้อมูลการเข้า-ออกงานของพนักงานคนนี้
+              </p>
+            </div>
+          )}
         </>
-      ) : (
-        <div className="bg-card rounded-lg border p-8 text-center">
-          <CalendarDays className="text-muted-foreground mx-auto h-12 w-12" />
-          <h3 className="mt-4 text-lg font-semibold">ไม่มีประวัติการเข้างาน</h3>
-          <p className="text-muted-foreground mt-2 text-sm">
-            ยังไม่มีข้อมูลการเข้า-ออกงานของพนักงานคนนี้
-          </p>
-        </div>
       )}
     </div>
   );
