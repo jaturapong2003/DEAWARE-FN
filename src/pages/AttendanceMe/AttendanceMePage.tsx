@@ -24,12 +24,38 @@ function AttendanceMePage() {
   const [limit, setLimit] = useState<number>(10);
 
   const { data, isLoading, error } = useQuery<AttendanceResponse>({
-    queryKey: ['history/me', page, limit],
+    queryKey: [
+      'history/me',
+      page,
+      limit,
+      dateRange?.from?.toISOString(),
+      dateRange?.to?.toISOString(),
+    ],
     queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('page', String(page));
+      params.append('limit', String(limit));
+
+      if (dateRange?.from) {
+        const start = dateRange.from;
+        const year = start.getFullYear();
+        const month = String(start.getMonth() + 1).padStart(2, '0');
+        const day = String(start.getDate()).padStart(2, '0');
+        params.append('start_date', `${year}-${month}-${day}`);
+      }
+
+      const end = dateRange?.to || dateRange?.from;
+      if (end) {
+        const year = end.getFullYear();
+        const month = String(end.getMonth() + 1).padStart(2, '0');
+        const day = String(end.getDate()).padStart(2, '0');
+        params.append('end_date', `${year}-${month}-${day}`);
+      }
+
       const response = await apiClient.get<AttendanceResponse>(
         '/attendance/me',
         {
-          params: { page, limit },
+          params,
         }
       );
       return response.data;
@@ -49,23 +75,8 @@ function AttendanceMePage() {
     (r: { check_out: string | null }) => !!r.check_out
   ).length;
 
-  // filter by selected date range (if any)
-  const filteredRecords = (data?.records || []).filter(
-    (record: { check_in: string | null }) => {
-      if (!dateRange || !dateRange.from) return true;
-      if (!record.check_in) return false;
-      const rec = new Date(record.check_in);
-      const start = new Date(dateRange.from);
-      const end = dateRange.to
-        ? new Date(dateRange.to)
-        : new Date(dateRange.from);
-
-      // normalize time portion
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-      return rec >= start && rec <= end;
-    }
-  );
+  // records from API are already filtered if using server-side filtering
+  const filteredRecords = data?.records || [];
 
   return (
     <div className="space-y-6">

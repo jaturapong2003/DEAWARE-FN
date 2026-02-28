@@ -69,7 +69,7 @@ function EmployeeIdPage() {
     };
   }, [employee?.url_image]);
 
-  // ดึงประวัติการเข้างานจาก API พร้อมส่ง start_date, end_date
+  // ดึงประวัติการเข้างานจาก API พร้อมส่ง start_date, end_date (สำหรับการแสดงในลิสต์แบบแบ่งหน้า)
   const {
     records,
     total,
@@ -80,6 +80,15 @@ function EmployeeIdPage() {
     id,
     page,
     limit,
+    dateRange?.from,
+    dateRange?.to ?? dateRange?.from
+  );
+
+  // ดึงประวัติการเข้างานทั้งหมดในรอบปีสำหรับ Dashboard (จำกัด 400 รายการ)
+  const { records: dashboardRecords } = useEmployeeAttendanceHistory(
+    id,
+    1,
+    400,
     dateRange?.from,
     dateRange?.to ?? dateRange?.from
   );
@@ -315,7 +324,10 @@ function EmployeeIdPage() {
                       datesWithData.push(date);
                       // เก็บ format YYYY-MM-DD เพื่อใช้ใน CSS
                       const year = date.getFullYear();
-                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const month = String(date.getMonth() + 1).padStart(
+                        2,
+                        '0'
+                      );
                       const day = String(date.getDate()).padStart(2, '0');
                       dateStrings.add(`${year}-${month}-${day}`);
                     }
@@ -382,7 +394,11 @@ function EmployeeIdPage() {
 
       {activeTab === 'dashboard' ? (
         /* 📊 แดชบอร์ด */
-        <DashboardId employee={employee} records={records} total={total} />
+        <DashboardId
+          employee={employee}
+          records={dashboardRecords}
+          total={total}
+        />
       ) : (
         /* 📋 ประวัติการเข้างาน */
         <>

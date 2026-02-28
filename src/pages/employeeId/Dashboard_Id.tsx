@@ -37,7 +37,10 @@ interface DashboardIdProps {
 const FULL_HOURS = 9;
 
 /** คำนวณเกรด A/B/C จำนวนวันที่ทำครบ 9 ชม. (รายเดือน: ~20-22 วันทำงาน) */
-const calcMonthlyGrade = (fullDaysCount: number, totalDaysCount: number): 'A' | 'B' | 'C' => {
+const calcMonthlyGrade = (
+  fullDaysCount: number,
+  totalDaysCount: number
+): 'A' | 'B' | 'C' => {
   if (totalDaysCount === 0) return 'C';
   const percentage = (fullDaysCount / totalDaysCount) * 100;
   if (percentage >= 90) return 'A'; // ≥90%
@@ -49,11 +52,20 @@ const calcMonthlyGrade = (fullDaysCount: number, totalDaysCount: number): 'A' | 
 const gradeColor = (grade: 'A' | 'B' | 'C') => {
   switch (grade) {
     case 'A':
-      return { bg: 'bg-green-100 dark:bg-green-950/20', text: 'text-green-700 dark:text-green-400' };
+      return {
+        bg: 'bg-green-100 dark:bg-green-950/20',
+        text: 'text-green-700 dark:text-green-400',
+      };
     case 'B':
-      return { bg: 'bg-blue-100 dark:bg-blue-950/20', text: 'text-blue-700 dark:text-blue-400' };
+      return {
+        bg: 'bg-blue-100 dark:bg-blue-950/20',
+        text: 'text-blue-700 dark:text-blue-400',
+      };
     case 'C':
-      return { bg: 'bg-orange-100 dark:bg-orange-950/20', text: 'text-orange-700 dark:text-orange-400' };
+      return {
+        bg: 'bg-orange-100 dark:bg-orange-950/20',
+        text: 'text-orange-700 dark:text-orange-400',
+      };
   }
 };
 
@@ -118,9 +130,9 @@ const isFullHours = (record: AttendanceRecord): boolean => {
 
 /** แสดงเวลาเป็น "X ชม. Y นาที" (เช่น 1.17 hrs → "1 ชม. 10 นาที") */
 const fmtHours = (decimalHours: number): string => {
-  const abs = Math.abs(decimalHours);
-  const h = Math.floor(abs);
-  const m = Math.floor((abs - h) * 60);
+  const totalMinutes = Math.round(Math.abs(decimalHours) * 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
   if (h === 0) return `${m} นาที`;
   if (m === 0) return `${h} ชม.`;
   return `${h} ชม. ${m} นาที`;
@@ -160,16 +172,15 @@ const buildBarData = (records: AttendanceRecord[]) => {
 };
 
 /** สร้างข้อมูล Pie Chart สำหรับเดือนที่เลือก (ครบ 9 ชม., ไม่ครบ, ไม่มีข้อมูล) */
-const buildMonthlyDetailPieData = (records: AttendanceRecord[], monthKey: string) => {
+const buildMonthlyDetailPieData = (
+  records: AttendanceRecord[],
+  monthKey: string
+) => {
   let full = 0;
   let notFull = 0;
-  let noData = 0;
 
   records.forEach((r) => {
-    if (!r.check_in) {
-      noData += 1;
-      return;
-    }
+    if (!r.check_in) return;
 
     // เช็คว่า record นี้อยู่ในเดือนที่เลือกไหม
     const date = new Date(r.check_in);
@@ -191,7 +202,6 @@ const buildMonthlyDetailPieData = (records: AttendanceRecord[], monthKey: string
   return [
     { name: 'ครบ 9 ชม.', value: full, color: '#22c55e' },
     { name: 'ไม่ครบ 9 ชม.', value: notFull, color: '#f97316' },
-    { name: 'ไม่มีข้อมูล', value: noData, color: '#94a3b8' },
   ].filter((d) => d.value > 0);
 };
 
@@ -294,31 +304,50 @@ const CustomPieTooltip = ({
 // ============ Main Component ============
 
 function DashboardId({ employee, records, total }: DashboardIdProps) {
-  // สร้างข้อมูลสำหรับ charts
-  const barData = buildBarData(records);
+  // ใช้ useMemo เพื่อประสิทธิภาพเมื่อข้อมูลมีปริมาณมาก (สูงสุด 400 รายการ)
+  const barData = React.useMemo(() => buildBarData(records), [records]);
+  const monthlyGrades = React.useMemo(
+    () => buildMonthlyGradeData(records),
+    [records]
+  );
 
-  // สร้างข้อมูล monthly grading
-  const monthlyGrades = buildMonthlyGradeData(records);
-
-  // เลือกเดือนแรก (จาก Calendar filter ใน EmployeeIdpage)
+  // เลือกเดือนแรกที่มีข้อมูล
   const selectedMonth = monthlyGrades[0];
 
-  // สร้าง Pie Data ของเดือนที่มีข้อมูล
-  const pieData = selectedMonth
-    ? buildMonthlyDetailPieData(records, selectedMonth.monthKey)
-    : [];
-  const totalForPie = pieData.reduce((sum, d) => sum + d.value, 0);
-  const pieDataWithTotal = pieData.map((d) => ({ ...d, total: totalForPie }));
+  const stats = React.useMemo(() => {
+    const pieData = selectedMonth
+      ? buildMonthlyDetailPieData(records, selectedMonth.monthKey)
+      : [];
+    const totalForPie = pieData.reduce((sum, d) => sum + d.value, 0);
+    const pieDataWithTotal = pieData.map((d) => ({ ...d, total: totalForPie }));
 
-  // Stats
-  const fullCount = records.filter(isFullHours).length;
+    const fullCount = records.filter(isFullHours).length;
+    const totalWorkHours = records.reduce((sum, r) => sum + calcHours(r), 0);
+    const avgWorkHours =
+      records.length > 0 ? totalWorkHours / records.length : 0;
+    const expectedTotalHours =
+      records.filter((r) => r.check_in).length * FULL_HOURS;
+    const diffHours = totalWorkHours - expectedTotalHours;
+
+    return {
+      pieDataWithTotal,
+      fullCount,
+      totalWorkHours,
+      avgWorkHours,
+      diffHours,
+    };
+  }, [records, selectedMonth]);
+
   const notFullCount = records.filter(
     (r) => r.check_in && !isFullHours(r)
   ).length;
-  const totalWorkHours = records.reduce((sum, r) => sum + calcHours(r), 0);
-  const expectedHours = records.filter((r) => r.check_in).length * FULL_HOURS;
-  const diffHours = totalWorkHours - expectedHours;
-  const avgWorkHours = records.length > 0 ? totalWorkHours / records.length : 0;
+  const {
+    pieDataWithTotal,
+    fullCount,
+    totalWorkHours,
+    avgWorkHours,
+    diffHours,
+  } = stats;
 
   return (
     <div className="space-y-6">
@@ -468,17 +497,29 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
 
             {/* Month Statistics */}
             {selectedMonth && (
-              <div className={`rounded-lg p-3 space-y-1 ${gradeColor(selectedMonth.grade).bg}`}>
-                <p className={`text-sm font-semibold ${gradeColor(selectedMonth.grade).text}`}>
-                  {new Date(selectedMonth.monthDate).toLocaleDateString('th-TH', {
-                    month: 'long',
-                    year: 'numeric',
-                  })}
+              <div
+                className={`space-y-1 rounded-lg p-3 ${gradeColor(selectedMonth.grade).bg}`}
+              >
+                <p
+                  className={`text-sm font-semibold ${gradeColor(selectedMonth.grade).text}`}
+                >
+                  {new Date(selectedMonth.monthDate).toLocaleDateString(
+                    'th-TH',
+                    {
+                      month: 'long',
+                      year: 'numeric',
+                    }
+                  )}
                 </p>
-                <p className={`text-xs font-medium ${gradeColor(selectedMonth.grade).text}`}>
-                  ทำงานครบ 9 ชม. {selectedMonth.fullDays} จาก {selectedMonth.totalDays} วัน
+                <p
+                  className={`text-xs font-medium ${gradeColor(selectedMonth.grade).text}`}
+                >
+                  ทำงานครบ 9 ชม. {selectedMonth.fullDays} จาก{' '}
+                  {selectedMonth.totalDays} วัน
                 </p>
-                <p className={`text-base font-bold ${gradeColor(selectedMonth.grade).text}`}>
+                <p
+                  className={`text-base font-bold ${gradeColor(selectedMonth.grade).text}`}
+                >
                   เกรด {selectedMonth.grade}
                 </p>
               </div>
