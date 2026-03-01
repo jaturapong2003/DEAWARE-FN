@@ -104,9 +104,9 @@ function AttendanceMePage() {
                     selected={dateRange}
                     onSelect={setDateRange}
                     numberOfMonths={1}
-                    // disabled={(date: Date) =>
-                    //   date > new Date() || date < new Date('1900-01-01')
-                    // }
+                    disabled={(date: Date) =>
+                      date > new Date() || date < new Date('1900-01-01')
+                    }
                   />
                 </PopoverContent>
               </Popover>

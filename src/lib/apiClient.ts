@@ -2,7 +2,7 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axio
 import keycloak from '@/config/keycloak';
 
 // URL ของ API จาก environment variable
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // สร้าง Axios instance
 const apiClient: AxiosInstance = axios.create({
