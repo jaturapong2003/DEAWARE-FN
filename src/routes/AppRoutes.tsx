@@ -12,6 +12,9 @@ const EmployeeIdPage = lazy(() => import('@/pages/employeeId/EmployeeIdpage'));
 const AttendanceMePage = lazy(
   () => import('@/pages/AttendanceMe/AttendanceMePage')
 );
+const KpiDashboardPage = lazy(
+  () => import('@/pages/Employee/KpiDashboardPage')
+);
 
 const AppRoutes: React.FC = () => {
   return (
@@ -29,6 +32,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/api-test" element={<ApiTestPage />} />
             <Route path="/employees">
               <Route index element={<EmployeesPage />} />
+              <Route path="kpi" element={<KpiDashboardPage />} />
               <Route path=":id" element={<EmployeeIdPage />} />
             </Route>
             <Route path="*" element={<div>404 Not Found</div>} />

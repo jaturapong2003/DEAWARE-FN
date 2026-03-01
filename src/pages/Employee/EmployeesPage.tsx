@@ -5,7 +5,14 @@ import type { EmployeesList } from '@/@types/Employees';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Mail, Phone, Search, Users } from 'lucide-react';
+import {
+  ChevronRight,
+  Mail,
+  Phone,
+  Search,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
 import { getInitials } from '@/lib/helper';
 import apiClient from '@/lib/apiClient';
 import keycloak from '@/config/keycloak';
@@ -72,6 +79,7 @@ const EmployeeCard: React.FC<{ employee: EmployeesList }> = ({ employee }) => {
 
 // Main employees component
 function EmployeesPage() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
 
   const { data, isLoading, error } = useQuery<EmployeesList[]>({
@@ -123,6 +131,29 @@ function EmployeesPage() {
               className="pl-10"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Dashboard KPI Self-Monitoring Navigation */}
+      <div
+        onClick={() => navigate('/employees/kpi')}
+        className="bg-primary/5 hover:bg-primary/10 border-primary/20 group cursor-pointer rounded-2xl border p-6 transition-all"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-primary/20 rounded-xl p-3">
+              <TrendingUp className="text-primary h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">
+                รายงานประสิทธิภาพรายบุคคล (Individual Insights)
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                วิเคราะห์แนวโน้มการรักษาเวลาและภาพรวมประสิทธิภาพองค์กร
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="text-muted-foreground group-hover:text-primary transition-colors" />
         </div>
       </div>
 
