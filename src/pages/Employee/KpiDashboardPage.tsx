@@ -31,179 +31,38 @@ export default function KpiDashboardPage() {
   const navigate = useNavigate();
   const [range, setRange] = useState('1M');
 
-  // --- MOCK DATA: MONTHLY TREND ---
-  // ข้อมูลย้อนหลังเพื่อดู Trend (แข่งกับตัวเองในอดีต)
-  const mockHistoricalTrend = [
-    { month: 'ต.ค.', punctuality: 65, lateRate: 35 },
-    { month: 'พ.ย.', punctuality: 72, lateRate: 28 },
-    { month: 'ธ.ค.', punctuality: 68, lateRate: 32 },
-    { month: 'ม.ค.', punctuality: 78, lateRate: 22 },
-    { month: 'ก.พ.', punctuality: 85, lateRate: 15 },
-  ];
+  // --- DATA STATES ---
+  const mockHistoricalTrend: {
+    month: string;
+    punctuality: number;
+    lateRate: number;
+  }[] = [];
 
-  // --- DYNAMIC DATA LOGIC BY RANGE ---
-  interface RangeData {
-    comparison: Array<{
-      name: string;
-      complete: number;
-      partial: number;
-      absent: number;
-    }>;
+  const currentData = {
     stats: {
-      efficiency: number;
-      complete: number;
-      late: number;
-      companyRate: number;
-      improvement: number;
-    };
-  }
-
-  const getMockData = (selectedRange: string): RangeData => {
-    const dataMap: Record<string, RangeData> = {
-      '1W': {
-        comparison: [
-          { name: 'คุณมานะ', complete: 5, partial: 0, absent: 0 },
-          { name: 'คุณปิติ', complete: 4, partial: 1, absent: 0 },
-          { name: 'คุณชูใจ', complete: 5, partial: 0, absent: 0 },
-          { name: 'ฉัน (คุณปอง)', complete: 3, partial: 2, absent: 0 },
-        ],
-        stats: {
-          efficiency: 92.4,
-          complete: 5,
-          late: 0,
-          companyRate: 88,
-          improvement: 2,
-        },
-      },
-      '1M': {
-        comparison: [
-          { name: 'คุณมานะ', complete: 22, partial: 2, absent: 0 },
-          { name: 'คุณปิติ', complete: 18, partial: 5, absent: 1 },
-          { name: 'คุณชูใจ', complete: 20, partial: 3, absent: 1 },
-          { name: 'ฉัน (คุณปอง)', complete: 10, partial: 2, absent: 0 },
-        ],
-        stats: {
-          efficiency: 82.4,
-          complete: 22,
-          late: 3,
-          companyRate: 85,
-          improvement: 10,
-        },
-      },
-      '3M': {
-        comparison: [
-          { name: 'คุณมานะ', complete: 62, partial: 5, absent: 1 },
-          { name: 'คุณปิติ', complete: 50, partial: 12, absent: 2 },
-          { name: 'คุณชูใจ', complete: 58, partial: 6, absent: 0 },
-          { name: 'ฉัน (คุณปอง)', complete: 35, partial: 20, absent: 5 },
-        ],
-        stats: {
-          efficiency: 78.5,
-          complete: 65,
-          late: 8,
-          companyRate: 82,
-          improvement: 12,
-        },
-      },
-      '6M': {
-        comparison: [
-          { name: 'คุณมานะ', complete: 120, partial: 10, absent: 2 },
-          { name: 'คุณปิติ', complete: 105, partial: 18, absent: 5 },
-          { name: 'คุณชูใจ', complete: 115, partial: 12, absent: 3 },
-          { name: 'ฉัน (คุณปอง)', complete: 75, partial: 35, absent: 10 },
-        ],
-        stats: {
-          efficiency: 75.2,
-          complete: 110,
-          late: 15,
-          companyRate: 80,
-          improvement: 15,
-        },
-      },
-      '1Y': {
-        comparison: [
-          { name: 'คุณมานะ', complete: 240, partial: 20, absent: 5 },
-          { name: 'คุณปิติ', complete: 210, partial: 40, absent: 10 },
-          { name: 'คุณชูใจ', complete: 230, partial: 15, absent: 5 },
-          { name: 'ฉัน (คุณปอง)', complete: 150, partial: 80, absent: 30 },
-        ],
-        stats: {
-          efficiency: 72.8,
-          complete: 180,
-          late: 25,
-          companyRate: 78,
-          improvement: 18,
-        },
-      },
-    };
-    return dataMap[selectedRange] || dataMap['1M'];
+      efficiency: 0,
+      complete: 0,
+      late: 0,
+      companyRate: 0,
+      improvement: 0,
+    },
   };
 
-  const currentData = getMockData(range);
-  const mockComparisonData = currentData.comparison;
-
-  // เลือกเฉพาะ 3 คนที่สถิติการทำงานครบ (complete) สูงที่สุดตามค่าที่เลือกจริง
-  const top3ComparisonData = [...mockComparisonData]
-    .sort((a, b) => b.complete - a.complete)
-    .slice(0, 3);
+  const top3ComparisonData: any[] = [];
 
   const companyStats = {
-    punctualityRate: currentData.stats.companyRate,
-    improvement: currentData.stats.improvement,
-    totalEmployees: 4,
+    punctualityRate: 0,
+    improvement: 0,
+    totalEmployees: 0,
     target: 90,
   };
 
   const filterOptions = [
-    { label: '1 สป', value: '1W' },
     { label: '1 ด', value: '1M' },
     { label: '3 ด', value: '3M' },
     { label: '6 ด', value: '6M' },
     { label: '1 ปี', value: '1Y' },
   ];
-
-  const getRangeDescription = (selectedRange: string) => {
-    switch (selectedRange) {
-      case '1W':
-        return 'สัปดาห์ล่าสุด (7 วัน)';
-      case '1M':
-        return 'เดือนล่าสุด (30 วัน)';
-      case '3M':
-        return 'ไตรมาสล่าสุด (90 วัน)';
-      case '6M':
-        return 'ครึ่งปีล่าสุด (180 วัน)';
-      case '1Y':
-        return 'ปีล่าสุด (365 วัน)';
-      default:
-        return '';
-    }
-  };
-
-  const getCompareLabel = (selectedRange: string) => {
-    switch (selectedRange) {
-      case '1W':
-        return 'เทียบสัปดาห์ก่อนหน้า';
-      case '1M':
-        return 'เทียบเดือนก่อนหน้า';
-      case '3M':
-        return 'เทียบไตรมาสก่อนหน้า';
-      default:
-        return 'เทียบรอบก่อนหน้า';
-    }
-  };
-
-  const getInsightText = (selectedRange: string) => {
-    switch (selectedRange) {
-      case '1W':
-        return `"สัปดาห์นี้มีการรักษาเวลาดีขึ้นร้อยละ ${currentData.stats.improvement}% เทียบกับสัปดาห์ที่ผ่านมา"`;
-      case '1M':
-        return `"เดือนกุมภาพันธ์มีการสายรวมลดลงร้อยละ ${currentData.stats.improvement}% เทียบกับเฉลี่ยมกราคม"`;
-      case '3M':
-        return `"ไตรมาสล่าสุดมีการพัฒนาวินัยอย่างต่อเนื่องร้อยละ ${currentData.stats.improvement}% เทียบกับไตรมาสก่อนหน้า"`;
-      default:
-        return `"ภาพรวมประสิทธิภาพพัฒนาขึ้นร้อยละ ${currentData.stats.improvement}% เทียบกับช่วงเวลาที่ผ่านมา"`;
-    }
-  };
 
   return (
     <div className="container mx-auto max-w-6xl space-y-10 p-6 pb-20">
@@ -224,7 +83,7 @@ export default function KpiDashboardPage() {
             </h1>
             <p className="text-muted-foreground mt-2 flex items-center gap-2 text-sm font-medium">
               <TrendingUp className="text-primary h-4 w-4" />
-              สรุปข้อมูล {getRangeDescription(range)}
+              สรุปข้อมูลภาพรวมตามช่วงวันที่เลือก
             </p>
           </div>
         </div>
@@ -274,7 +133,7 @@ export default function KpiDashboardPage() {
                 พัฒนาขึ้น {companyStats.improvement}%
               </div>
               <p className="text-sm font-medium text-white/40 italic">
-                {getCompareLabel(range)}
+                เทียบรอบก่อนหน้า
               </p>
             </div>
           </div>
@@ -403,7 +262,7 @@ export default function KpiDashboardPage() {
                 Historical Insight
               </p>
               <p className="decoration-primary/20 text-sm leading-snug font-black text-slate-800 underline dark:text-slate-200">
-                {getInsightText(range)}
+                -
               </p>
             </div>
             <div className="space-y-2 border-l pl-8">
@@ -427,10 +286,7 @@ export default function KpiDashboardPage() {
               </div>
               <div className="flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-[10px] font-black text-green-500 uppercase dark:bg-green-950/20">
                 <TrendingUp className="h-3 w-3" />
-                {range === '1W'
-                  ? '+2.1%'
-                  : `+${currentData.stats.improvement - 5}%`}{' '}
-                VS PREV
+                0% VS PREV
               </div>
             </div>
             <p className="text-muted-foreground text-[11px] font-black tracking-[0.2em] uppercase">
@@ -504,7 +360,7 @@ export default function KpiDashboardPage() {
           </div>
           <div className="bg-primary/5 ring-primary/20 rounded-2xl px-8 py-4 ring-1 backdrop-blur-sm">
             <p className="text-primary text-xs font-black tracking-[0.2em] uppercase">
-              🏆 ผู้นำความรับผิดชอบ: คุณมานะ
+              🏆 ผู้นำความรับผิดชอบ: -
             </p>
           </div>
         </div>

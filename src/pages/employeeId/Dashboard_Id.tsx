@@ -1,6 +1,6 @@
 import type { AttendanceRecord } from '@/@types/Attendance';
 import type { EmployeesList } from '@/@types/Employees';
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/date';
 import {
@@ -11,7 +11,20 @@ import {
   CheckCircle2,
   CalendarDays,
   Users,
+  LogIn,
+  LogOut,
+  Smartphone,
+  ImageIcon,
+  Maximize2,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   BarChart,
   Bar,
@@ -26,6 +39,7 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
+import PaginationControll from '@/components/filter/PaginationControll';
 
 interface DashboardIdProps {
   employee: EmployeesList;
@@ -304,6 +318,10 @@ const CustomPieTooltip = ({
 // ============ Main Component ============
 
 function DashboardId({ employee, records, total }: DashboardIdProps) {
+  // Pagination สำหรับชั่วโมงทำงานรายวัน
+  const [dailyPage, setDailyPage] = useState(1);
+  const [dailyLimit, setDailyLimit] = useState(10);
+
   // ใช้ useMemo เพื่อประสิทธิภาพเมื่อข้อมูลมีปริมาณมาก (สูงสุด 400 รายการ)
   const barData = React.useMemo(() => buildBarData(records), [records]);
   const monthlyGrades = React.useMemo(
@@ -581,7 +599,7 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
 
         const grouped = new Map<
           string,
-          { totalHours: number; count: number }
+          { totalHours: number; count: number; records: AttendanceRecord[] }
         >();
 
         activeRecords.forEach((r) => {
@@ -591,13 +609,25 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
 
           const key = formatDate(r.check_in);
 
-          const entry = grouped.get(key) ?? { totalHours: 0, count: 0 };
+          const entry = grouped.get(key) ?? {
+            totalHours: 0,
+            count: 0,
+            records: [],
+          };
           entry.totalHours += hours;
           entry.count += 1;
+          entry.records.push(r);
           grouped.set(key, entry);
         });
 
         const groupedList = Array.from(grouped.entries());
+
+        // Pagination
+        const totalDailyPages = Math.ceil(groupedList.length / dailyLimit);
+        const paginatedList = groupedList.slice(
+          (dailyPage - 1) * dailyLimit,
+          dailyPage * dailyLimit
+        );
 
         return (
           <div className="bg-card rounded-lg border">
@@ -613,7 +643,7 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
 
             <div className="divide-y">
               {groupedList.length > 0 ? (
-                groupedList.map(([label, data]) => {
+                paginatedList.map(([label, data]) => {
                   const expectedForGroup = data.count * FULL_HOURS;
                   const diff = data.totalHours - expectedForGroup;
                   const isFull = data.totalHours >= expectedForGroup;
@@ -622,54 +652,271 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
                     100
                   );
 
+                  const dayRecords = data.records;
+
                   return (
-                    <div
-                      key={label}
-                      className="hover:bg-muted/30 px-5 py-4 transition-colors"
-                    >
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                        {/* วันที่ */}
-                        <div className="flex items-center gap-2 sm:w-48">
-                          <CalendarDays className="text-muted-foreground h-4 w-4 shrink-0" />
-                          <span className="text-sm font-medium">{label}</span>
-                        </div>
+                    <Dialog key={label}>
+                      <DialogTrigger asChild>
+                        <button
+                          type="button"
+                          className="hover:bg-muted/30 w-full cursor-pointer px-5 py-4 text-left transition-colors"
+                        >
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                            {/* วันที่ */}
+                            <div className="flex items-center gap-2 sm:w-48">
+                              <CalendarDays className="text-muted-foreground h-4 w-4 shrink-0" />
+                              <span className="text-sm font-medium">
+                                {label}
+                              </span>
+                            </div>
 
-                        {/* Progress bar */}
-                        <div className="flex-1">
-                          <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
-                            <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                isFull ? 'bg-green-500' : 'bg-orange-500'
-                              }`}
-                              style={{ width: `${percentage}%` }}
-                            />
+                            {/* Progress bar */}
+                            <div className="flex-1">
+                              <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    isFull ? 'bg-green-500' : 'bg-orange-500'
+                                  }`}
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* ชั่วโมง + ขาด/เกิน */}
+                            <div className="flex items-center gap-3 sm:w-56 sm:justify-end">
+                              <span className="text-sm font-bold">
+                                {fmtHours(data.totalHours)}
+                              </span>
+                              <Badge
+                                variant={isFull ? 'default' : 'destructive'}
+                                className="min-w-[100px] justify-center text-xs"
+                              >
+                                {isFull ? (
+                                  <>
+                                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                                    เกิน +{fmtHours(diff)}
+                                  </>
+                                ) : (
+                                  <>
+                                    <AlertCircle className="mr-1 h-3 w-3" />
+                                    ขาด {fmtHours(Math.abs(diff))}
+                                  </>
+                                )}
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
+                        </button>
+                      </DialogTrigger>
 
-                        {/* ชั่วโมง + ขาด/เกิน */}
-                        <div className="flex items-center gap-3 sm:w-56 sm:justify-end">
-                          <span className="text-sm font-bold">
+                      {/* === Dialog Content === */}
+                      <DialogContent className="sm:max-w-lg">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <CalendarDays className="text-primary h-5 w-5" />
+                            รายละเอียดวันที่ {label}
+                          </DialogTitle>
+                          <DialogDescription>
+                            สรุปการเข้า-ออกงาน • ทำงานรวม{' '}
                             {fmtHours(data.totalHours)}
-                          </span>
-                          <Badge
-                            variant={isFull ? 'default' : 'destructive'}
-                            className="min-w-[100px] justify-center text-xs"
-                          >
-                            {isFull ? (
-                              <>
-                                <CheckCircle2 className="mr-1 h-3 w-3" />
-                                เกิน +{fmtHours(diff)}
-                              </>
-                            ) : (
-                              <>
-                                <AlertCircle className="mr-1 h-3 w-3" />
-                                ขาด {fmtHours(Math.abs(diff))}
-                              </>
-                            )}
-                          </Badge>
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4">
+                          {dayRecords.map((rec, idx) => {
+                            const checkInTime = rec.check_in
+                              ? new Date(rec.check_in).toLocaleTimeString(
+                                  'th-TH',
+                                  {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  }
+                                )
+                              : '--:--';
+                            const checkOutTime = rec.check_out
+                              ? new Date(rec.check_out).toLocaleTimeString(
+                                  'th-TH',
+                                  {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  }
+                                )
+                              : '--:--';
+                            const hours = calcHours(rec);
+                            const recIsFull = hours >= FULL_HOURS;
+
+                            return (
+                              <div
+                                key={rec.id || idx}
+                                className="bg-muted/30 rounded-lg border p-4"
+                              >
+                                {/* Check-in / Check-out Row */}
+                                <div className="grid grid-cols-2 gap-4">
+                                  {/* Check-in */}
+                                  <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 dark:bg-green-950/30">
+                                        <LogIn className="h-4 w-4 text-green-600" />
+                                      </div>
+                                      <div>
+                                        <p className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                                          เข้างาน
+                                        </p>
+                                        <p className="text-lg font-black text-green-600">
+                                          {checkInTime}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {/* รูป mock check-in - กดขยายได้ */}
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <button
+                                          type="button"
+                                          className="bg-muted group/img relative aspect-video w-full cursor-pointer overflow-hidden rounded-lg border transition-all hover:border-green-400/50 hover:shadow-md"
+                                        >
+                                          <div className="flex h-full w-full flex-col items-center justify-center gap-1">
+                                            <ImageIcon className="text-muted-foreground h-8 w-8" />
+                                            <span className="text-muted-foreground text-[10px]">
+                                              รูปเข้างาน
+                                            </span>
+                                          </div>
+                                          <div className="absolute right-1 bottom-1 rounded bg-black/50 p-0.5 opacity-0 transition-opacity group-hover/img:opacity-100">
+                                            <Maximize2 className="h-3 w-3 text-white" />
+                                          </div>
+                                        </button>
+                                      </DialogTrigger>
+                                      <DialogContent className="sm:max-w-md">
+                                        <DialogHeader>
+                                          <DialogTitle>
+                                            รูปเข้างาน • {label}
+                                          </DialogTitle>
+                                        </DialogHeader>
+                                        <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
+                                          <div className="flex flex-col items-center gap-2">
+                                            <ImageIcon className="text-muted-foreground h-16 w-16" />
+                                            <span className="text-muted-foreground text-sm">
+                                              ยังไม่มีรูปภาพ
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </DialogContent>
+                                    </Dialog>
+                                    {rec.check_in_device && (
+                                      <div className="flex items-center gap-1.5 text-xs">
+                                        <Smartphone className="text-muted-foreground h-3 w-3" />
+                                        <span className="text-muted-foreground">
+                                          {rec.check_in_device}
+                                        </span>
+                                        {rec.check_in_confidence != null && (
+                                          <Badge
+                                            variant="outline"
+                                            className="ml-auto text-[10px]"
+                                          >
+                                            {(
+                                              rec.check_in_confidence * 100
+                                            ).toFixed(0)}
+                                            %
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Check-out */}
+                                  <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-950/30">
+                                        <LogOut className="h-4 w-4 text-orange-600" />
+                                      </div>
+                                      <div>
+                                        <p className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                                          ออกงาน
+                                        </p>
+                                        <p className="text-lg font-black text-orange-600">
+                                          {checkOutTime}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {/* รูป mock check-out - กดขยายได้ */}
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <button
+                                          type="button"
+                                          className="bg-muted group/img relative aspect-video w-full cursor-pointer overflow-hidden rounded-lg border transition-all hover:border-orange-400/50 hover:shadow-md"
+                                        >
+                                          <div className="flex h-full w-full flex-col items-center justify-center gap-1">
+                                            <ImageIcon className="text-muted-foreground h-8 w-8" />
+                                            <span className="text-muted-foreground text-[10px]">
+                                              รูปออกงาน
+                                            </span>
+                                          </div>
+                                          <div className="absolute right-1 bottom-1 rounded bg-black/50 p-0.5 opacity-0 transition-opacity group-hover/img:opacity-100">
+                                            <Maximize2 className="h-3 w-3 text-white" />
+                                          </div>
+                                        </button>
+                                      </DialogTrigger>
+                                      <DialogContent className="sm:max-w-md">
+                                        <DialogHeader>
+                                          <DialogTitle>
+                                            รูปออกงาน • {label}
+                                          </DialogTitle>
+                                        </DialogHeader>
+                                        <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
+                                          <div className="flex flex-col items-center gap-2">
+                                            <ImageIcon className="text-muted-foreground h-16 w-16" />
+                                            <span className="text-muted-foreground text-sm">
+                                              ยังไม่มีรูปภาพ
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </DialogContent>
+                                    </Dialog>
+                                    {rec.check_out_device && (
+                                      <div className="flex items-center gap-1.5 text-xs">
+                                        <Smartphone className="text-muted-foreground h-3 w-3" />
+                                        <span className="text-muted-foreground">
+                                          {rec.check_out_device}
+                                        </span>
+                                        {rec.check_out_confidence != null && (
+                                          <Badge
+                                            variant="outline"
+                                            className="ml-auto text-[10px]"
+                                          >
+                                            {(
+                                              rec.check_out_confidence * 100
+                                            ).toFixed(0)}
+                                            %
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Summary */}
+                                <div className="mt-3 flex items-center justify-between border-t pt-3">
+                                  <span className="text-muted-foreground text-xs">
+                                    ชั่วโมงทำงาน
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold">
+                                      {fmtHours(hours)}
+                                    </span>
+                                    <Badge
+                                      variant={
+                                        recIsFull ? 'default' : 'destructive'
+                                      }
+                                      className="text-[10px]"
+                                    >
+                                      {recIsFull ? '✅ ครบ' : '⚠️ ไม่ครบ'}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                    </div>
+                      </DialogContent>
+                    </Dialog>
                   );
                 })
               ) : (
@@ -681,6 +928,22 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
                 </div>
               )}
             </div>
+
+            {/* Pagination */}
+            {groupedList.length > 0 && totalDailyPages > 0 && (
+              <div className="flex items-center justify-center border-t p-4">
+                <PaginationControll
+                  page={dailyPage}
+                  totalPages={totalDailyPages}
+                  limit={dailyLimit}
+                  onPageChange={(p) => setDailyPage(p)}
+                  onLimitChange={(l) => {
+                    setDailyLimit(l);
+                    setDailyPage(1);
+                  }}
+                />
+              </div>
+            )}
           </div>
         );
       })()}

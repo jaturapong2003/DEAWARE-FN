@@ -5,13 +5,22 @@ import {
   Camera,
   CheckCircle2,
   Clock,
+  ImageIcon,
   LogIn,
   LogOut,
+  Maximize2,
   Monitor,
   XCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, formatTime } from '@/lib/date';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 // ICON DEVICE
 const DeviceIcon: React.FC<{ device: string | null }> = ({ device }) => {
@@ -92,6 +101,40 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                 {formatTime(record.check_in)}
               </span>
             </div>
+            {/* รูปเข้างาน (mock) - กดขยายได้ */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="bg-muted group/img hover:border-primary/50 relative aspect-video w-full cursor-pointer overflow-hidden rounded-md border transition-all hover:shadow-md"
+                >
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-0.5">
+                    <ImageIcon className="text-muted-foreground h-6 w-6" />
+                    <span className="text-muted-foreground text-[9px]">
+                      รูปเข้างาน
+                    </span>
+                  </div>
+                  <div className="absolute right-1 bottom-1 rounded bg-black/50 p-0.5 opacity-0 transition-opacity group-hover/img:opacity-100">
+                    <Maximize2 className="h-3 w-3 text-white" />
+                  </div>
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    รูปเข้างาน • {formatDate(record.check_in)}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
+                  <div className="flex flex-col items-center gap-2">
+                    <ImageIcon className="text-muted-foreground h-16 w-16" />
+                    <span className="text-muted-foreground text-sm">
+                      ยังไม่มีรูปภาพ
+                    </span>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
               <div className="flex items-center gap-2">
                 <DeviceIcon device={record.check_in_device} />
@@ -126,6 +169,40 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                 {record.check_out ? formatTime(record.check_out) : '-'}
               </span>
             </div>
+            {/* รูปออกงาน (mock) - กดขยายได้ */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="bg-muted group/img relative aspect-video w-full cursor-pointer overflow-hidden rounded-md border transition-all hover:border-orange-400/50 hover:shadow-md"
+                >
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-0.5">
+                    <ImageIcon className="text-muted-foreground h-6 w-6" />
+                    <span className="text-muted-foreground text-[9px]">
+                      รูปออกงาน
+                    </span>
+                  </div>
+                  <div className="absolute right-1 bottom-1 rounded bg-black/50 p-0.5 opacity-0 transition-opacity group-hover/img:opacity-100">
+                    <Maximize2 className="h-3 w-3 text-white" />
+                  </div>
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    รูปออกงาน • {formatDate(record.check_in)}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
+                  <div className="flex flex-col items-center gap-2">
+                    <ImageIcon className="text-muted-foreground h-16 w-16" />
+                    <span className="text-muted-foreground text-sm">
+                      ยังไม่มีรูปภาพ
+                    </span>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             {record.check_out ? (
               <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
                 <div className="flex items-center gap-2">
