@@ -272,7 +272,6 @@ function EmployeeIdPage() {
                   selected={dateRange}
                   onSelect={(range) => {
                     setDateRange(range);
-                    setPage(1);
                   }}
                   captionLayout="dropdown"
                 />
@@ -284,7 +283,6 @@ function EmployeeIdPage() {
                 size="sm"
                 onClick={() => {
                   setDateRange(undefined);
-                  setPage(1);
                 }}
                 className="text-muted-foreground h-8 px-2 text-xs"
               >
