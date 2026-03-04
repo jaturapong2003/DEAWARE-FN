@@ -2,14 +2,7 @@ import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import {
-  Mail,
-  User,
-  Building2,
-  Phone,
-  Clock,
-  ScanFace,
-} from 'lucide-react';
+import { Mail, User, Building2, Phone, Clock, ScanFace } from 'lucide-react';
 import { formatTime, formatDate } from '@/lib/date';
 import { getInitials } from '@/lib/helper';
 
@@ -102,9 +95,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
             {/* Grid 1 คอลัมน์บน mobile, 2 คอลัมน์บน tablet+ */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
               {/* ชื่อเต็ม */}
-              <div className="group space-y-1.5">
+              <div className="group cursor-default space-y-1.5">
                 <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
-                  <User className="text-primary/60 group-hover:text-primary h-3.5 w-3.5 transition-colors sm:h-4 sm:w-4" />
+                  <div className="bg-primary/0 group-hover:bg-primary/10 flex h-6 w-6 items-center justify-center rounded-md transition-all duration-200 group-hover:scale-110 sm:h-7 sm:w-7">
+                    <User className="text-primary/60 group-hover:text-primary h-3.5 w-3.5 transition-colors duration-200 sm:h-4 sm:w-4" />
+                  </div>
                   <span>ชื่อเต็ม</span>
                 </div>
                 <p className="text-foreground text-sm font-medium sm:text-base">
@@ -113,9 +108,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
               </div>
 
               {/* Username */}
-              <div className="group space-y-1.5">
+              <div className="group cursor-default space-y-1.5">
                 <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
-                  <Building2 className="text-accent/60 group-hover:text-accent h-3.5 w-3.5 transition-colors sm:h-4 sm:w-4" />
+                  <div className="bg-chart-3/0 group-hover:bg-chart-3/10 flex h-6 w-6 items-center justify-center rounded-md transition-all duration-200 group-hover:scale-110 sm:h-7 sm:w-7">
+                    <Building2 className="text-chart-3/60 group-hover:text-chart-3 h-3.5 w-3.5 transition-colors duration-200 sm:h-4 sm:w-4" />
+                  </div>
                   <span>ชื่อผู้ใช้</span>
                 </div>
                 <p className="text-foreground text-sm font-medium sm:text-base">
@@ -124,9 +121,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
               </div>
 
               {/* Email */}
-              <div className="group space-y-1.5">
+              <div className="group cursor-default space-y-1.5">
                 <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
-                  <Mail className="text-chart-2/60 group-hover:text-chart-2 h-3.5 w-3.5 transition-colors sm:h-4 sm:w-4" />
+                  <div className="bg-chart-2/0 group-hover:bg-chart-2/10 flex h-6 w-6 items-center justify-center rounded-md transition-all duration-200 group-hover:scale-110 sm:h-7 sm:w-7">
+                    <Mail className="text-chart-2/60 group-hover:text-chart-2 h-3.5 w-3.5 transition-colors duration-200 sm:h-4 sm:w-4" />
+                  </div>
                   <span>อีเมล</span>
                 </div>
                 <p className="text-foreground text-sm font-medium break-all sm:text-base">
@@ -135,9 +134,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
               </div>
 
               {/* เบอร์โทร */}
-              <div className="group space-y-1.5">
+              <div className="group cursor-default space-y-1.5">
                 <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
-                  <Phone className="text-chart-4/60 group-hover:text-chart-4 h-3.5 w-3.5 transition-colors sm:h-4 sm:w-4" />
+                  <div className="bg-chart-4/0 group-hover:bg-chart-4/10 flex h-6 w-6 items-center justify-center rounded-md transition-all duration-200 group-hover:scale-110 sm:h-7 sm:w-7">
+                    <Phone className="text-chart-4/60 group-hover:text-chart-4 h-3.5 w-3.5 transition-colors duration-200 sm:h-4 sm:w-4" />
+                  </div>
                   <span>เบอร์โทร</span>
                 </div>
                 <p className="text-foreground text-sm font-medium sm:text-base">
@@ -146,9 +147,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
               </div>
 
               {/* Face Embedding */}
-              <div className="group space-y-1.5">
+              <div className="group cursor-default space-y-1.5">
                 <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
-                  <ScanFace className="text-chart-1/60 group-hover:text-chart-1 h-3.5 w-3.5 transition-colors sm:h-4 sm:w-4" />
+                  <div className="bg-chart-1/0 group-hover:bg-chart-1/10 flex h-6 w-6 items-center justify-center rounded-md transition-all duration-200 group-hover:scale-110 sm:h-7 sm:w-7">
+                    <ScanFace className="text-chart-1/60 group-hover:text-chart-1 h-3.5 w-3.5 transition-colors duration-200 sm:h-4 sm:w-4" />
+                  </div>
                   <span>ข้อมูลใบหน้า</span>
                 </div>
                 <div className="flex items-center gap-2">
