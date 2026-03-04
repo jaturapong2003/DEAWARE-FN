@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
-import type { AttendanceRecord } from '@/@types/Attendance';
+import useEmployeeById from '@/hooks/useEmployeeById';
+
 import type { DateRange } from 'react-day-picker';
 import type { EmployeesList } from '@/@types/Employees';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { getInitials } from '@/lib/helper';
 import LoadingPage from '@/components/common/LoadingPage';
-import PaginationControll from '@/components/filter/PaginationControll';
-import AttendanceCard from '@/components/common/AttendanceCard';
+
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   UserRoundCog,
 } from 'lucide-react';
+import DashboardId from './Dashboard_Id';
 
 /**
  * หน้ารายละเอียดพนักงาน - แสดงโปรไฟล์และประวัติการเข้างาน
@@ -34,12 +35,17 @@ function EmployeeIdPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(10);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   // รับข้อมูลพนักงานจาก route state (ส่งมาจาก EmployeesPage)
-  const employee = (location.state as { employee?: EmployeesList })?.employee;
+  const stateEmployee = (location.state as { employee?: EmployeesList })
+    ?.employee;
+
+  // ใช้ hook เพื่อ fetch ข้อมูลจาก API ถ้าไม่มี location.state (เช่น refresh หน้า)
+  const { employee, loading: employeeLoading } = useEmployeeById(
+    id,
+    stateEmployee
+  );
 
   // เช็คว่ารูปโปรไฟล์โหลดได้ไหม (ไม่ error ใน console)
   const [imgReady, setImgReady] = useState(false);
@@ -55,35 +61,26 @@ function EmployeeIdPage() {
     };
   }, [employee?.url_image]);
 
-  // ดึงประวัติการเข้างานจาก API พร้อมส่ง start_date, end_date
-  const {
-    records,
-    total,
-    totalPages,
-    loading: isLoading,
-    error,
-  } = useEmployeeAttendanceHistory(
+  // ดึงประวัติการเข้างานทั้งหมดในรอบปีสำหรับ Dashboard (จำกัด 400 รายการ)
+  const { records: dashboardRecords, total } = useEmployeeAttendanceHistory(
     id,
-    page,
-    limit,
+    1,
+    400,
     dateRange?.from,
     dateRange?.to ?? dateRange?.from
   );
-
-  const data = {
-    records,
-    page,
-    limit,
-    total,
-    total_pages: totalPages,
-  };
 
   // 🔙 ปุ่มกลับ
   const handleGoBack = () => {
     navigate('/employees');
   };
 
-  // ถ้าไม่มีข้อมูลพนักงาน (เข้า URL ตรงๆ ไม่ผ่านหน้า list)
+  // กำลังโหลดข้อมูลพนักงาน
+  if (employeeLoading) {
+    return <LoadingPage message="กำลังโหลดข้อมูลพนักงาน..." />;
+  }
+
+  // ถ้าไม่มีข้อมูลพนักงาน (ไม่พบใน API)
   if (!employee) {
     return (
       <div className="space-y-6">
@@ -222,19 +219,14 @@ function EmployeeIdPage() {
         </div>
       </div>
 
-      {/* 📋 ประวัติการเข้างาน */}
-      <div className="bg-card rounded-lg border p-6">
-        <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg">
-              <CalendarDays className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold">ประวัติการเข้างาน</h2>
-              <p className="text-muted-foreground text-sm">
-                {data ? `ทั้งหมด ${data.total} รายการ` : 'กำลังโหลด...'}
-              </p>
-            </div>
+      {/* === เลือกช่วงวัน + แดชบอร์ด === */}
+      <div className="bg-card rounded-lg border">
+        <div className="flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-bold">ภาพรวมและประวัติการเข้างาน</h2>
+            <p className="text-muted-foreground text-sm">
+              แดชบอร์ดและรายการบันทึกการเข้า-ออกงาน
+            </p>
           </div>
 
           {/* 📅 เลือกช่วงวันที่ */}
@@ -280,7 +272,6 @@ function EmployeeIdPage() {
                   selected={dateRange}
                   onSelect={(range) => {
                     setDateRange(range);
-                    setPage(1);
                   }}
                   captionLayout="dropdown"
                 />
@@ -292,7 +283,6 @@ function EmployeeIdPage() {
                 size="sm"
                 onClick={() => {
                   setDateRange(undefined);
-                  setPage(1);
                 }}
                 className="text-muted-foreground h-8 px-2 text-xs"
               >
@@ -302,82 +292,15 @@ function EmployeeIdPage() {
           </div>
         </div>
 
-        {/* Stats */}
-        {data && (
-          <div className="mb-6 grid gap-4 sm:grid-cols-3">
-            <div className="bg-primary/5 rounded-lg p-4">
-              <div className="text-muted-foreground mb-1 text-sm">
-                บันทึกทั้งหมด
-              </div>
-              <div className="text-2xl font-bold">{data.total} ครั้ง</div>
-            </div>
-            <div className="rounded-lg bg-green-50 p-4 dark:bg-green-950/20">
-              <div className="text-muted-foreground mb-1 text-sm">
-                กำลังทำงาน
-              </div>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {data.records.filter((r) => !r.check_out).length} ครั้ง
-              </div>
-            </div>
-            <div className="rounded-lg bg-orange-50 p-4 dark:bg-orange-950/20">
-              <div className="text-muted-foreground mb-1 text-sm">
-                สิ้นสุดแล้ว
-              </div>
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {data.records.filter((r) => !!r.check_out).length} ครั้ง
-              </div>
-            </div>
-          </div>
-        )}
+        {/* 📊 แดชบอร์ด */}
+        <div className="p-4">
+          <DashboardId
+            employee={employee}
+            records={dashboardRecords}
+            total={total}
+          />
+        </div>
       </div>
-
-      {/* Attendance Records */}
-      {isLoading ? (
-        <LoadingPage
-          message="กำลังโหลดประวัติการเข้างาน..."
-          fullScreen={false}
-        />
-      ) : error ? (
-        <div className="bg-card rounded-lg border p-8 text-center">
-          <AlertTriangle className="mx-auto h-10 w-10 text-orange-500" />
-          <h3 className="mt-4 text-lg font-semibold">
-            ไม่สามารถโหลดประวัติการเข้างานได้
-          </h3>
-          <p className="text-muted-foreground mt-2 text-sm">
-            อาจยังไม่มีข้อมูลประวัติสำหรับพนักงานคนนี้
-          </p>
-        </div>
-      ) : data && data.records.length > 0 ? (
-        <>
-          <div className="grid gap-4 lg:grid-cols-2">
-            {data.records.map((record: AttendanceRecord) => (
-              <AttendanceCard key={record.id} record={record} />
-            ))}
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-center">
-            <PaginationControll
-              page={page}
-              totalPages={data.total_pages}
-              limit={limit}
-              onPageChange={(p) => setPage(p)}
-              onLimitChange={(l) => {
-                setLimit(l);
-                setPage(1);
-              }}
-            />
-          </div>
-        </>
-      ) : (
-        <div className="bg-card rounded-lg border p-8 text-center">
-          <CalendarDays className="text-muted-foreground mx-auto h-12 w-12" />
-          <h3 className="mt-4 text-lg font-semibold">ไม่มีประวัติการเข้างาน</h3>
-          <p className="text-muted-foreground mt-2 text-sm">
-            ยังไม่มีข้อมูลการเข้า-ออกงานของพนักงานคนนี้
-          </p>
-        </div>
-      )}
     </div>
   );
 }
