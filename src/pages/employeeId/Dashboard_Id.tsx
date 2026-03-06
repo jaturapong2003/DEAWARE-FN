@@ -13,9 +13,10 @@ import {
   Users,
   LogIn,
   LogOut,
-  Smartphone,
+  Monitor,
+  Camera,
+  Ban,
   ImageIcon,
-  Maximize2,
 } from 'lucide-react';
 import {
   Dialog,
@@ -46,6 +47,45 @@ interface DashboardIdProps {
   records: AttendanceRecord[];
   total: number;
 }
+
+// ============ Device Helpers ============
+
+// ICON DEVICE
+const DeviceIcon: React.FC<{ device: string | null }> = ({ device }) => {
+  switch (device) {
+    case 'web_app':
+      return <Monitor className="h-4 w-4" />;
+    case 'cam-01':
+      return <Camera className="h-4 w-4" />;
+    default:
+      return <Ban className="h-4 w-4" />;
+  }
+};
+
+// DEVICE NAME
+const getDeviceName = (device: string | null): string => {
+  switch (device) {
+    case 'web_app':
+      return 'เว็บแอพ';
+    case 'cam-01':
+      return 'กล้อง 1';
+    default:
+      return '-';
+  }
+};
+
+// CONFIDENCE COLOR
+const getConfidenceColor = (confidence: number | null): string => {
+  if (!confidence) {
+    return 'text-muted-foreground';
+  } else if (confidence >= 0.9) {
+    return 'text-green-600';
+  } else if (confidence >= 0.7) {
+    return 'text-yellow-600';
+  } else {
+    return 'text-orange-600';
+  }
+};
 
 /** ทำงานครบ 9 ชม. หรือไม่ (นับจาก check_in → check_out) */
 const FULL_HOURS = 9;
@@ -750,145 +790,162 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
                                 className="bg-muted/30 rounded-lg border p-4"
                               >
                                 {/* Check-in / Check-out Row */}
-                                <div className="grid grid-cols-2 gap-4">
-                                  {/* Check-in */}
-                                  <div className="space-y-3">
-                                    <div className="flex items-center gap-2">
-                                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 dark:bg-green-950/30">
-                                        <LogIn className="h-4 w-4 text-green-600" />
-                                      </div>
-                                      <div>
-                                        <p className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-                                          เข้างาน
-                                        </p>
-                                        <p className="text-lg font-black text-green-600">
-                                          {checkInTime}
-                                        </p>
-                                      </div>
-                                    </div>
-                                    {/* รูป mock check-in - กดขยายได้ */}
-                                    <Dialog>
-                                      <DialogTrigger asChild>
-                                        <button
-                                          type="button"
-                                          className="bg-muted group/img relative aspect-video w-full cursor-pointer overflow-hidden rounded-lg border transition-all hover:border-green-400/50 hover:shadow-md"
-                                        >
-                                          <div className="flex h-full w-full flex-col items-center justify-center gap-1">
-                                            <ImageIcon className="text-muted-foreground h-8 w-8" />
-                                            <span className="text-muted-foreground text-[10px]">
-                                              รูปเข้างาน
-                                            </span>
-                                          </div>
-                                          <div className="absolute right-1 bottom-1 rounded bg-black/50 p-0.5 opacity-0 transition-opacity group-hover/img:opacity-100">
-                                            <Maximize2 className="h-3 w-3 text-white" />
-                                          </div>
-                                        </button>
-                                      </DialogTrigger>
-                                      <DialogContent className="sm:max-w-md">
-                                        <DialogHeader>
-                                          <DialogTitle>
-                                            รูปเข้างาน • {label}
-                                          </DialogTitle>
-                                        </DialogHeader>
-                                        <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
-                                          <div className="flex flex-col items-center gap-2">
-                                            <ImageIcon className="text-muted-foreground h-16 w-16" />
-                                            <span className="text-muted-foreground text-sm">
-                                              ยังไม่มีรูปภาพ
-                                            </span>
-                                          </div>
+                                <div className="flex gap-4">
+                                  <div className="grid flex-1 grid-cols-2 gap-4">
+                                    {/* Check-in */}
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 dark:bg-green-950/30">
+                                          <LogIn className="h-4 w-4 text-green-600" />
                                         </div>
-                                      </DialogContent>
-                                    </Dialog>
-                                    {rec.check_in_device && (
-                                      <div className="flex items-center gap-1.5 text-xs">
-                                        <Smartphone className="text-muted-foreground h-3 w-3" />
-                                        <span className="text-muted-foreground">
-                                          {rec.check_in_device}
-                                        </span>
+                                        <div>
+                                          <p className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                                            เข้างาน
+                                          </p>
+                                          <p className="text-lg font-black text-green-600">
+                                            {checkInTime}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
+                                        <div className="flex items-center gap-2">
+                                          <DeviceIcon
+                                            device={rec.check_in_device}
+                                          />
+                                          <span className="text-xs font-medium">
+                                            {getDeviceName(rec.check_in_device)}
+                                          </span>
+                                        </div>
                                         {rec.check_in_confidence != null && (
-                                          <Badge
-                                            variant="outline"
-                                            className="ml-auto text-[10px]"
-                                          >
-                                            {(
-                                              rec.check_in_confidence * 100
-                                            ).toFixed(0)}
-                                            %
-                                          </Badge>
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground text-xs">
+                                              ความแม่นยำ:
+                                            </span>
+                                            <span
+                                              className={`text-xs font-bold ${getConfidenceColor(rec.check_in_confidence)}`}
+                                            >
+                                              {(
+                                                rec.check_in_confidence * 100
+                                              ).toFixed(1)}
+                                              %
+                                            </span>
+                                          </div>
                                         )}
                                       </div>
-                                    )}
+                                    </div>
+
+                                    {/* Check-out */}
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-950/30">
+                                          <LogOut className="h-4 w-4 text-orange-600" />
+                                        </div>
+                                        <div>
+                                          <p className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                                            ออกงาน
+                                          </p>
+                                          <p className="text-lg font-black text-orange-600">
+                                            {checkOutTime}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
+                                        <div className="flex items-center gap-2">
+                                          <DeviceIcon
+                                            device={rec.check_out_device}
+                                          />
+                                          <span className="text-xs font-medium">
+                                            {getDeviceName(
+                                              rec.check_out_device
+                                            )}
+                                          </span>
+                                        </div>
+                                        {rec.check_out_confidence != null && (
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground text-xs">
+                                              ความแม่นยำ:
+                                            </span>
+                                            <span
+                                              className={`text-xs font-bold ${getConfidenceColor(rec.check_out_confidence)}`}
+                                            >
+                                              {(
+                                                rec.check_out_confidence * 100
+                                              ).toFixed(1)}
+                                              %
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
 
-                                  {/* Check-out */}
-                                  <div className="space-y-3">
-                                    <div className="flex items-center gap-2">
-                                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-950/30">
-                                        <LogOut className="h-4 w-4 text-orange-600" />
-                                      </div>
-                                      <div>
-                                        <p className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-                                          ออกงาน
-                                        </p>
-                                        <p className="text-lg font-black text-orange-600">
-                                          {checkOutTime}
-                                        </p>
-                                      </div>
-                                    </div>
-                                    {/* รูป mock check-out - กดขยายได้ */}
+                                  {/* ปุ่มดูรูปภาพ — อยู่ขวาสุด */}
+                                  <div className="flex items-start">
                                     <Dialog>
                                       <DialogTrigger asChild>
                                         <button
                                           type="button"
-                                          className="bg-muted group/img relative aspect-video w-full cursor-pointer overflow-hidden rounded-lg border transition-all hover:border-orange-400/50 hover:shadow-md"
+                                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-500 transition-all duration-200 hover:border-blue-300 hover:bg-blue-100 hover:text-blue-600 hover:shadow-sm dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:border-blue-700 dark:hover:bg-blue-950/50"
+                                          title="ดูรูปภาพเข้า-ออกงาน"
                                         >
-                                          <div className="flex h-full w-full flex-col items-center justify-center gap-1">
-                                            <ImageIcon className="text-muted-foreground h-8 w-8" />
-                                            <span className="text-muted-foreground text-[10px]">
-                                              รูปออกงาน
-                                            </span>
-                                          </div>
-                                          <div className="absolute right-1 bottom-1 rounded bg-black/50 p-0.5 opacity-0 transition-opacity group-hover/img:opacity-100">
-                                            <Maximize2 className="h-3 w-3 text-white" />
-                                          </div>
+                                          <ImageIcon className="h-4 w-4" />
                                         </button>
                                       </DialogTrigger>
-                                      <DialogContent className="sm:max-w-md">
+                                      <DialogContent className="sm:max-w-2xl">
                                         <DialogHeader>
-                                          <DialogTitle>
-                                            รูปออกงาน • {label}
+                                          <DialogTitle className="flex items-center gap-2">
+                                            <ImageIcon className="text-primary h-5 w-5" />
+                                            รูปภาพเข้า-ออกงาน • {label}
                                           </DialogTitle>
                                         </DialogHeader>
-                                        <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
-                                          <div className="flex flex-col items-center gap-2">
-                                            <ImageIcon className="text-muted-foreground h-16 w-16" />
-                                            <span className="text-muted-foreground text-sm">
-                                              ยังไม่มีรูปภาพ
-                                            </span>
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                          {/* รูปเข้างาน */}
+                                          <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-green-100 dark:bg-green-950/30">
+                                                <LogIn className="h-3.5 w-3.5 text-green-600" />
+                                              </div>
+                                              <span className="text-sm font-semibold text-green-600">
+                                                รูปเข้างาน
+                                              </span>
+                                              <span className="text-muted-foreground text-xs">
+                                                {checkInTime}
+                                              </span>
+                                            </div>
+                                            <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
+                                              <div className="flex flex-col items-center gap-2">
+                                                <ImageIcon className="text-muted-foreground h-12 w-12" />
+                                                <span className="text-muted-foreground text-sm">
+                                                  ยังไม่มีรูปภาพ
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          {/* รูปออกงาน */}
+                                          <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-100 dark:bg-orange-950/30">
+                                                <LogOut className="h-3.5 w-3.5 text-orange-600" />
+                                              </div>
+                                              <span className="text-sm font-semibold text-orange-600">
+                                                รูปออกงาน
+                                              </span>
+                                              <span className="text-muted-foreground text-xs">
+                                                {checkOutTime}
+                                              </span>
+                                            </div>
+                                            <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
+                                              <div className="flex flex-col items-center gap-2">
+                                                <ImageIcon className="text-muted-foreground h-12 w-12" />
+                                                <span className="text-muted-foreground text-sm">
+                                                  ยังไม่มีรูปภาพ
+                                                </span>
+                                              </div>
+                                            </div>
                                           </div>
                                         </div>
                                       </DialogContent>
                                     </Dialog>
-                                    {rec.check_out_device && (
-                                      <div className="flex items-center gap-1.5 text-xs">
-                                        <Smartphone className="text-muted-foreground h-3 w-3" />
-                                        <span className="text-muted-foreground">
-                                          {rec.check_out_device}
-                                        </span>
-                                        {rec.check_out_confidence != null && (
-                                          <Badge
-                                            variant="outline"
-                                            className="ml-auto text-[10px]"
-                                          >
-                                            {(
-                                              rec.check_out_confidence * 100
-                                            ).toFixed(0)}
-                                            %
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    )}
                                   </div>
                                 </div>
 
