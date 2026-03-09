@@ -2,15 +2,14 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
 import useEmployeeById from '@/hooks/useEmployeeById';
-import type { AttendanceRecord } from '@/@types/Attendance';
+
 import type { DateRange } from 'react-day-picker';
 import type { EmployeesList } from '@/@types/Employees';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { getInitials } from '@/lib/helper';
 import LoadingPage from '@/components/common/LoadingPage';
-import PaginationControll from '@/components/filter/PaginationControll';
-import AttendanceCard from '@/components/common/AttendanceCard';
+
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -26,8 +25,6 @@ import {
   CalendarDays,
   AlertTriangle,
   UserRoundCog,
-  BarChart3,
-  ClipboardList,
 } from 'lucide-react';
 import DashboardId from './Dashboard_Id';
 
@@ -38,12 +35,7 @@ function EmployeeIdPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(10);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [activeTab, setActiveTab] = useState<'attendance' | 'dashboard'>(
-    'attendance'
-  );
 
   // รับข้อมูลพนักงานจาก route state (ส่งมาจาก EmployeesPage)
   const stateEmployee = (location.state as { employee?: EmployeesList })
@@ -69,37 +61,14 @@ function EmployeeIdPage() {
     };
   }, [employee?.url_image]);
 
-  // ดึงประวัติการเข้างานจาก API พร้อมส่ง start_date, end_date (สำหรับการแสดงในลิสต์แบบแบ่งหน้า)
-  const {
-    records,
-    total,
-    totalPages,
-    loading: isLoading,
-    error,
-  } = useEmployeeAttendanceHistory(
-    id,
-    page,
-    limit,
-    dateRange?.from,
-    dateRange?.to ?? dateRange?.from
-  );
-
   // ดึงประวัติการเข้างานทั้งหมดในรอบปีสำหรับ Dashboard (จำกัด 400 รายการ)
-  const { records: dashboardRecords } = useEmployeeAttendanceHistory(
+  const { records: dashboardRecords, total } = useEmployeeAttendanceHistory(
     id,
     1,
     400,
     dateRange?.from,
     dateRange?.to ?? dateRange?.from
   );
-
-  const data = {
-    records,
-    page,
-    limit,
-    total,
-    total_pages: totalPages,
-  };
 
   // 🔙 ปุ่มกลับ
   const handleGoBack = () => {
@@ -250,29 +219,14 @@ function EmployeeIdPage() {
         </div>
       </div>
 
-      {/* === Header: Tab สลับ + เลือกช่วงวัน === */}
-      <div className="bg-card rounded-lg border p-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          {/* Tab Buttons */}
-          <div className="bg-muted flex rounded-lg p-1">
-            <Button
-              variant={activeTab === 'attendance' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('attendance')}
-              className={`gap-2 text-xs ${activeTab === 'attendance' ? '' : 'hover:bg-background'}`}
-            >
-              <ClipboardList className="h-4 w-4" />
-              ประวัติการเข้างาน
-            </Button>
-            <Button
-              variant={activeTab === 'dashboard' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('dashboard')}
-              className={`gap-2 text-xs ${activeTab === 'dashboard' ? '' : 'hover:bg-background'}`}
-            >
-              <BarChart3 className="h-4 w-4" />
-              แดชบอร์ด
-            </Button>
+      {/* === เลือกช่วงวัน + แดชบอร์ด === */}
+      <div className="bg-card rounded-lg border">
+        <div className="flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-bold">ภาพรวมและประวัติการเข้างาน</h2>
+            <p className="text-muted-foreground text-sm">
+              แดชบอร์ดและรายการบันทึกการเข้า-ออกงาน
+            </p>
           </div>
 
           {/* 📅 เลือกช่วงวันที่ */}
@@ -313,64 +267,14 @@ function EmployeeIdPage() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
-                {/* สร้าง modifiers สำหรับวันที่มีข้อมูล */}
-                {(() => {
-                  const datesWithData: Date[] = [];
-                  const dateStrings = new Set<string>();
-
-                  records.forEach((r) => {
-                    if (r.check_in) {
-                      const date = new Date(r.check_in);
-                      datesWithData.push(date);
-                      // เก็บ format YYYY-MM-DD เพื่อใช้ใน CSS
-                      const year = date.getFullYear();
-                      const month = String(date.getMonth() + 1).padStart(
-                        2,
-                        '0'
-                      );
-                      const day = String(date.getDate()).padStart(2, '0');
-                      dateStrings.add(`${year}-${month}-${day}`);
-                    }
-                  });
-
-                  return (
-                    <>
-                      <style>{`
-                        [data-slot="popover-content"] [data-day] {
-                          --day-date: attr(data-day);
-                        }
-                        ${Array.from(dateStrings)
-                          .map(
-                            (dateStr) =>
-                              `[data-day="${dateStr}"] {
-                                background-color: #dcfce7 !important;
-                                border: 2px solid #22c55e !important;
-                                border-radius: 6px !important;
-                                font-weight: 600 !important;
-                                color: #166534 !important;
-                              }
-                              @media (prefers-color-scheme: dark) {
-                                [data-day="${dateStr}"] {
-                                  background-color: #064e3b !important;
-                                  border: 2px solid #10b981 !important;
-                                  color: #86efac !important;
-                                }
-                              }`
-                          )
-                          .join('\n')}
-                      `}</style>
-                      <Calendar
-                        mode="range"
-                        selected={dateRange}
-                        onSelect={(range) => {
-                          setDateRange(range);
-                          setPage(1);
-                        }}
-                        captionLayout="dropdown"
-                      />
-                    </>
-                  );
-                })()}
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={(range) => {
+                    setDateRange(range);
+                  }}
+                  captionLayout="dropdown"
+                />
               </PopoverContent>
             </Popover>
             {dateRange?.from && (
@@ -379,7 +283,6 @@ function EmployeeIdPage() {
                 size="sm"
                 onClick={() => {
                   setDateRange(undefined);
-                  setPage(1);
                 }}
                 className="text-muted-foreground h-8 px-2 text-xs"
               >
@@ -388,97 +291,16 @@ function EmployeeIdPage() {
             )}
           </div>
         </div>
+
+        {/* 📊 แดชบอร์ด */}
+        <div className="p-4">
+          <DashboardId
+            employee={employee}
+            records={dashboardRecords}
+            total={total}
+          />
+        </div>
       </div>
-
-      {/* === เนื้อหาสลับตาม Tab === */}
-
-      {activeTab === 'dashboard' ? (
-        /* 📊 แดชบอร์ด */
-        <DashboardId
-          employee={employee}
-          records={dashboardRecords}
-          total={total}
-        />
-      ) : (
-        /* 📋 ประวัติการเข้างาน */
-        <>
-          {/* Stats */}
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="bg-card bg-primary/5 rounded-lg border p-4">
-              <div className="text-muted-foreground mb-1 text-sm">
-                บันทึกทั้งหมด
-              </div>
-              <div className="text-2xl font-bold">{data.total} ครั้ง</div>
-            </div>
-            <div className="bg-card rounded-lg border bg-green-50 p-4 dark:bg-green-950/20">
-              <div className="text-muted-foreground mb-1 text-sm">
-                กำลังทำงาน
-              </div>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {data.records.filter((r) => !r.check_out).length} ครั้ง
-              </div>
-            </div>
-            <div className="bg-card rounded-lg border bg-orange-50 p-4 dark:bg-orange-950/20">
-              <div className="text-muted-foreground mb-1 text-sm">
-                สิ้นสุดแล้ว
-              </div>
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {data.records.filter((r) => !!r.check_out).length} ครั้ง
-              </div>
-            </div>
-          </div>
-
-          {/* Attendance Records */}
-          {isLoading ? (
-            <LoadingPage
-              message="กำลังโหลดประวัติการเข้างาน..."
-              fullScreen={false}
-            />
-          ) : error ? (
-            <div className="bg-card rounded-lg border p-8 text-center">
-              <AlertTriangle className="mx-auto h-10 w-10 text-orange-500" />
-              <h3 className="mt-4 text-lg font-semibold">
-                ไม่สามารถโหลดประวัติการเข้างานได้
-              </h3>
-              <p className="text-muted-foreground mt-2 text-sm">
-                อาจยังไม่มีข้อมูลประวัติสำหรับพนักงานคนนี้
-              </p>
-            </div>
-          ) : data && data.records.length > 0 ? (
-            <>
-              <div className="grid gap-4 lg:grid-cols-2">
-                {data.records.map((record: AttendanceRecord) => (
-                  <AttendanceCard key={record.id} record={record} />
-                ))}
-              </div>
-
-              {/* Pagination */}
-              <div className="flex items-center justify-center">
-                <PaginationControll
-                  page={page}
-                  totalPages={data.total_pages}
-                  limit={limit}
-                  onPageChange={(p) => setPage(p)}
-                  onLimitChange={(l) => {
-                    setLimit(l);
-                    setPage(1);
-                  }}
-                />
-              </div>
-            </>
-          ) : (
-            <div className="bg-card rounded-lg border p-8 text-center">
-              <CalendarDays className="text-muted-foreground mx-auto h-12 w-12" />
-              <h3 className="mt-4 text-lg font-semibold">
-                ไม่มีประวัติการเข้างาน
-              </h3>
-              <p className="text-muted-foreground mt-2 text-sm">
-                ยังไม่มีข้อมูลการเข้า-ออกงานของพนักงานคนนี้
-              </p>
-            </div>
-          )}
-        </>
-      )}
     </div>
   );
 }

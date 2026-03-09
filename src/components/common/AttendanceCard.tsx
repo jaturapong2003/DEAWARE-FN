@@ -5,6 +5,7 @@ import {
   Camera,
   CheckCircle2,
   Clock,
+  ImageIcon,
   LogIn,
   LogOut,
   Monitor,
@@ -12,6 +13,13 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, formatTime } from '@/lib/date';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 // ICON DEVICE
 const DeviceIcon: React.FC<{ device: string | null }> = ({ device }) => {
@@ -79,81 +87,153 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
       </div>
 
       <div className="p-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* เวลาเข้างาน */}
-          <div className="space-y-2">
-            <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
-              <LogIn className="h-4 w-4" />
-              <span>เวลาเข้างาน</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="text-primary h-5 w-5" />
-              <span className="text-lg font-semibold">
-                {formatTime(record.check_in)}
-              </span>
-            </div>
-            <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
+        <div className="flex gap-4">
+          {/* ข้อมูลเวลาเข้า-ออก */}
+          <div className="grid flex-1 gap-4 md:grid-cols-2">
+            {/* เวลาเข้างาน */}
+            <div className="space-y-2">
+              <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
+                <LogIn className="h-4 w-4" />
+                <span>เวลาเข้างาน</span>
+              </div>
               <div className="flex items-center gap-2">
-                <DeviceIcon device={record.check_in_device} />
-                <span className="text-xs font-medium">
-                  {getDeviceName(record.check_in_device)}
+                <Clock className="text-primary h-5 w-5" />
+                <span className="text-lg font-semibold">
+                  {formatTime(record.check_in)}
                 </span>
               </div>
-              {record.check_in_confidence !== null && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground text-xs">
-                    ความแม่นยำ:
+              <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
+                <div className="flex items-center gap-2">
+                  <DeviceIcon device={record.check_in_device} />
+                  <span className="text-xs font-medium">
+                    {getDeviceName(record.check_in_device)}
                   </span>
-                  <span
-                    className={`text-xs font-bold ${getConfidenceColor(record.check_in_confidence)}`}
-                  >
-                    {(record.check_in_confidence * 100).toFixed(1)}%
+                </div>
+                {record.check_in_confidence !== null && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">
+                      ความแม่นยำ:
+                    </span>
+                    <span
+                      className={`text-xs font-bold ${getConfidenceColor(record.check_in_confidence)}`}
+                    >
+                      {(record.check_in_confidence * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* เวลาออกงาน */}
+            <div className="space-y-2">
+              <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
+                <LogOut className="h-4 w-4" />
+                <span>เวลาออกงาน</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-orange-500" />
+                <span className="text-lg font-semibold">
+                  {record.check_out ? formatTime(record.check_out) : '-'}
+                </span>
+              </div>
+              {record.check_out ? (
+                <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
+                  <div className="flex items-center gap-2">
+                    <DeviceIcon device={record.check_out_device} />
+                    <span className="text-xs font-medium">
+                      {getDeviceName(record.check_out_device)}
+                    </span>
+                  </div>
+                  {record.check_out_confidence !== null && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground text-xs">
+                        ความแม่นยำ:
+                      </span>
+                      <span
+                        className={`text-xs font-bold ${getConfidenceColor(record.check_out_confidence)}`}
+                      >
+                        {(record.check_out_confidence * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-muted/30 rounded-md p-2">
+                  <span className="text-muted-foreground text-xs">
+                    ยังไม่ได้ออกงาน
                   </span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* เวลาออกงาน */}
-          <div className="space-y-2">
-            <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
-              <LogOut className="h-4 w-4" />
-              <span>เวลาออกงาน</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-orange-500" />
-              <span className="text-lg font-semibold">
-                {record.check_out ? formatTime(record.check_out) : '-'}
-              </span>
-            </div>
-            {record.check_out ? (
-              <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
-                <div className="flex items-center gap-2">
-                  <DeviceIcon device={record.check_out_device} />
-                  <span className="text-xs font-medium">
-                    {getDeviceName(record.check_out_device)}
-                  </span>
-                </div>
-                {record.check_out_confidence !== null && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-xs">
-                      ความแม่นยำ:
-                    </span>
-                    <span
-                      className={`text-xs font-bold ${getConfidenceColor(record.check_out_confidence)}`}
-                    >
-                      {(record.check_out_confidence * 100).toFixed(1)}%
-                    </span>
+          {/* ปุ่มดูรูปภาพ — อยู่ขวาสุด */}
+          <div className="flex items-start">
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-500 transition-all duration-200 hover:border-blue-300 hover:bg-blue-100 hover:text-blue-600 hover:shadow-sm dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:border-blue-700 dark:hover:bg-blue-950/50"
+                  title="ดูรูปภาพเข้า-ออกงาน"
+                >
+                  <ImageIcon className="h-5 w-5" />
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <ImageIcon className="text-primary h-5 w-5" />
+                    รูปภาพเข้า-ออกงาน • {formatDate(record.check_in)}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {/* รูปเข้างาน */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-green-100 dark:bg-green-950/30">
+                        <LogIn className="h-3.5 w-3.5 text-green-600" />
+                      </div>
+                      <span className="text-sm font-semibold text-green-600">
+                        รูปเข้างาน
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {formatTime(record.check_in)}
+                      </span>
+                    </div>
+                    <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
+                      <div className="flex flex-col items-center gap-2">
+                        <ImageIcon className="text-muted-foreground h-12 w-12" />
+                        <span className="text-muted-foreground text-sm">
+                          ยังไม่มีรูปภาพ
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="bg-muted/30 rounded-md p-2">
-                <span className="text-muted-foreground text-xs">
-                  ยังไม่ได้ออกงาน
-                </span>
-              </div>
-            )}
+                  {/* รูปออกงาน */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-100 dark:bg-orange-950/30">
+                        <LogOut className="h-3.5 w-3.5 text-orange-600" />
+                      </div>
+                      <span className="text-sm font-semibold text-orange-600">
+                        รูปออกงาน
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {record.check_out ? formatTime(record.check_out) : '-'}
+                      </span>
+                    </div>
+                    <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
+                      <div className="flex flex-col items-center gap-2">
+                        <ImageIcon className="text-muted-foreground h-12 w-12" />
+                        <span className="text-muted-foreground text-sm">
+                          ยังไม่มีรูปภาพ
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 

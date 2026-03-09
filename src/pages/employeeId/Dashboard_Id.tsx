@@ -1,6 +1,6 @@
 import type { AttendanceRecord } from '@/@types/Attendance';
 import type { EmployeesList } from '@/@types/Employees';
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/date';
 import {
@@ -11,7 +11,21 @@ import {
   CheckCircle2,
   CalendarDays,
   Users,
+  LogIn,
+  LogOut,
+  Monitor,
+  Camera,
+  Ban,
+  ImageIcon,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   BarChart,
   Bar,
@@ -26,12 +40,52 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
+import PaginationControll from '@/components/filter/PaginationControll';
 
 interface DashboardIdProps {
   employee: EmployeesList;
   records: AttendanceRecord[];
   total: number;
 }
+
+// ============ Device Helpers ============
+
+// ICON DEVICE
+const DeviceIcon: React.FC<{ device: string | null }> = ({ device }) => {
+  switch (device) {
+    case 'web_app':
+      return <Monitor className="h-4 w-4" />;
+    case 'cam-01':
+      return <Camera className="h-4 w-4" />;
+    default:
+      return <Ban className="h-4 w-4" />;
+  }
+};
+
+// DEVICE NAME
+const getDeviceName = (device: string | null): string => {
+  switch (device) {
+    case 'web_app':
+      return 'เว็บแอพ';
+    case 'cam-01':
+      return 'กล้อง 1';
+    default:
+      return '-';
+  }
+};
+
+// CONFIDENCE COLOR
+const getConfidenceColor = (confidence: number | null): string => {
+  if (!confidence) {
+    return 'text-muted-foreground';
+  } else if (confidence >= 0.9) {
+    return 'text-green-600';
+  } else if (confidence >= 0.7) {
+    return 'text-yellow-600';
+  } else {
+    return 'text-orange-600';
+  }
+};
 
 /** ทำงานครบ 9 ชม. หรือไม่ (นับจาก check_in → check_out) */
 const FULL_HOURS = 9;
@@ -304,6 +358,10 @@ const CustomPieTooltip = ({
 // ============ Main Component ============
 
 function DashboardId({ employee, records, total }: DashboardIdProps) {
+  // Pagination สำหรับชั่วโมงทำงานรายวัน
+  const [dailyPage, setDailyPage] = useState(1);
+  const [dailyLimit, setDailyLimit] = useState(10);
+
   // ใช้ useMemo เพื่อประสิทธิภาพเมื่อข้อมูลมีปริมาณมาก (สูงสุด 400 รายการ)
   const barData = React.useMemo(() => buildBarData(records), [records]);
   const monthlyGrades = React.useMemo(
@@ -581,7 +639,7 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
 
         const grouped = new Map<
           string,
-          { totalHours: number; count: number }
+          { totalHours: number; count: number; records: AttendanceRecord[] }
         >();
 
         activeRecords.forEach((r) => {
@@ -591,13 +649,25 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
 
           const key = formatDate(r.check_in);
 
-          const entry = grouped.get(key) ?? { totalHours: 0, count: 0 };
+          const entry = grouped.get(key) ?? {
+            totalHours: 0,
+            count: 0,
+            records: [],
+          };
           entry.totalHours += hours;
           entry.count += 1;
+          entry.records.push(r);
           grouped.set(key, entry);
         });
 
         const groupedList = Array.from(grouped.entries());
+
+        // Pagination
+        const totalDailyPages = Math.ceil(groupedList.length / dailyLimit);
+        const paginatedList = groupedList.slice(
+          (dailyPage - 1) * dailyLimit,
+          dailyPage * dailyLimit
+        );
 
         return (
           <div className="bg-card rounded-lg border">
@@ -613,7 +683,7 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
 
             <div className="divide-y">
               {groupedList.length > 0 ? (
-                groupedList.map(([label, data]) => {
+                paginatedList.map(([label, data]) => {
                   const expectedForGroup = data.count * FULL_HOURS;
                   const diff = data.totalHours - expectedForGroup;
                   const isFull = data.totalHours >= expectedForGroup;
@@ -622,54 +692,288 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
                     100
                   );
 
+                  const dayRecords = data.records;
+
                   return (
-                    <div
-                      key={label}
-                      className="hover:bg-muted/30 px-5 py-4 transition-colors"
-                    >
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                        {/* วันที่ */}
-                        <div className="flex items-center gap-2 sm:w-48">
-                          <CalendarDays className="text-muted-foreground h-4 w-4 shrink-0" />
-                          <span className="text-sm font-medium">{label}</span>
-                        </div>
+                    <Dialog key={label}>
+                      <DialogTrigger asChild>
+                        <button
+                          type="button"
+                          className="hover:bg-muted/30 w-full cursor-pointer px-5 py-4 text-left transition-colors"
+                        >
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                            {/* วันที่ */}
+                            <div className="flex items-center gap-2 sm:w-48">
+                              <CalendarDays className="text-muted-foreground h-4 w-4 shrink-0" />
+                              <span className="text-sm font-medium">
+                                {label}
+                              </span>
+                            </div>
 
-                        {/* Progress bar */}
-                        <div className="flex-1">
-                          <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
-                            <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                isFull ? 'bg-green-500' : 'bg-orange-500'
-                              }`}
-                              style={{ width: `${percentage}%` }}
-                            />
+                            {/* Progress bar */}
+                            <div className="flex-1">
+                              <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    isFull ? 'bg-green-500' : 'bg-orange-500'
+                                  }`}
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* ชั่วโมง + ขาด/เกิน */}
+                            <div className="flex items-center gap-3 sm:w-56 sm:justify-end">
+                              <span className="text-sm font-bold">
+                                {fmtHours(data.totalHours)}
+                              </span>
+                              <Badge
+                                variant={isFull ? 'default' : 'destructive'}
+                                className="min-w-[100px] justify-center text-xs"
+                              >
+                                {isFull ? (
+                                  <>
+                                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                                    เกิน +{fmtHours(diff)}
+                                  </>
+                                ) : (
+                                  <>
+                                    <AlertCircle className="mr-1 h-3 w-3" />
+                                    ขาด {fmtHours(Math.abs(diff))}
+                                  </>
+                                )}
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
+                        </button>
+                      </DialogTrigger>
 
-                        {/* ชั่วโมง + ขาด/เกิน */}
-                        <div className="flex items-center gap-3 sm:w-56 sm:justify-end">
-                          <span className="text-sm font-bold">
+                      {/* === Dialog Content === */}
+                      <DialogContent className="sm:max-w-lg">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <CalendarDays className="text-primary h-5 w-5" />
+                            รายละเอียดวันที่ {label}
+                          </DialogTitle>
+                          <DialogDescription>
+                            สรุปการเข้า-ออกงาน • ทำงานรวม{' '}
                             {fmtHours(data.totalHours)}
-                          </span>
-                          <Badge
-                            variant={isFull ? 'default' : 'destructive'}
-                            className="min-w-[100px] justify-center text-xs"
-                          >
-                            {isFull ? (
-                              <>
-                                <CheckCircle2 className="mr-1 h-3 w-3" />
-                                เกิน +{fmtHours(diff)}
-                              </>
-                            ) : (
-                              <>
-                                <AlertCircle className="mr-1 h-3 w-3" />
-                                ขาด {fmtHours(Math.abs(diff))}
-                              </>
-                            )}
-                          </Badge>
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4">
+                          {dayRecords.map((rec, idx) => {
+                            const checkInTime = rec.check_in
+                              ? new Date(rec.check_in).toLocaleTimeString(
+                                  'th-TH',
+                                  {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  }
+                                )
+                              : '--:--';
+                            const checkOutTime = rec.check_out
+                              ? new Date(rec.check_out).toLocaleTimeString(
+                                  'th-TH',
+                                  {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  }
+                                )
+                              : '--:--';
+                            const hours = calcHours(rec);
+                            const recIsFull = hours >= FULL_HOURS;
+
+                            return (
+                              <div
+                                key={rec.id || idx}
+                                className="bg-muted/30 rounded-lg border p-4"
+                              >
+                                {/* Check-in / Check-out Row */}
+                                <div className="flex gap-4">
+                                  <div className="grid flex-1 grid-cols-2 gap-4">
+                                    {/* Check-in */}
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 dark:bg-green-950/30">
+                                          <LogIn className="h-4 w-4 text-green-600" />
+                                        </div>
+                                        <div>
+                                          <p className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                                            เข้างาน
+                                          </p>
+                                          <p className="text-lg font-black text-green-600">
+                                            {checkInTime}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
+                                        <div className="flex items-center gap-2">
+                                          <DeviceIcon
+                                            device={rec.check_in_device}
+                                          />
+                                          <span className="text-xs font-medium">
+                                            {getDeviceName(rec.check_in_device)}
+                                          </span>
+                                        </div>
+                                        {rec.check_in_confidence != null && (
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground text-xs">
+                                              ความแม่นยำ:
+                                            </span>
+                                            <span
+                                              className={`text-xs font-bold ${getConfidenceColor(rec.check_in_confidence)}`}
+                                            >
+                                              {(
+                                                rec.check_in_confidence * 100
+                                              ).toFixed(1)}
+                                              %
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Check-out */}
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-950/30">
+                                          <LogOut className="h-4 w-4 text-orange-600" />
+                                        </div>
+                                        <div>
+                                          <p className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                                            ออกงาน
+                                          </p>
+                                          <p className="text-lg font-black text-orange-600">
+                                            {checkOutTime}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
+                                        <div className="flex items-center gap-2">
+                                          <DeviceIcon
+                                            device={rec.check_out_device}
+                                          />
+                                          <span className="text-xs font-medium">
+                                            {getDeviceName(
+                                              rec.check_out_device
+                                            )}
+                                          </span>
+                                        </div>
+                                        {rec.check_out_confidence != null && (
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground text-xs">
+                                              ความแม่นยำ:
+                                            </span>
+                                            <span
+                                              className={`text-xs font-bold ${getConfidenceColor(rec.check_out_confidence)}`}
+                                            >
+                                              {(
+                                                rec.check_out_confidence * 100
+                                              ).toFixed(1)}
+                                              %
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* ปุ่มดูรูปภาพ — อยู่ขวาสุด */}
+                                  <div className="flex items-start">
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <button
+                                          type="button"
+                                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-500 transition-all duration-200 hover:border-blue-300 hover:bg-blue-100 hover:text-blue-600 hover:shadow-sm dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:border-blue-700 dark:hover:bg-blue-950/50"
+                                          title="ดูรูปภาพเข้า-ออกงาน"
+                                        >
+                                          <ImageIcon className="h-4 w-4" />
+                                        </button>
+                                      </DialogTrigger>
+                                      <DialogContent className="sm:max-w-2xl">
+                                        <DialogHeader>
+                                          <DialogTitle className="flex items-center gap-2">
+                                            <ImageIcon className="text-primary h-5 w-5" />
+                                            รูปภาพเข้า-ออกงาน • {label}
+                                          </DialogTitle>
+                                        </DialogHeader>
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                          {/* รูปเข้างาน */}
+                                          <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-green-100 dark:bg-green-950/30">
+                                                <LogIn className="h-3.5 w-3.5 text-green-600" />
+                                              </div>
+                                              <span className="text-sm font-semibold text-green-600">
+                                                รูปเข้างาน
+                                              </span>
+                                              <span className="text-muted-foreground text-xs">
+                                                {checkInTime}
+                                              </span>
+                                            </div>
+                                            <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
+                                              <div className="flex flex-col items-center gap-2">
+                                                <ImageIcon className="text-muted-foreground h-12 w-12" />
+                                                <span className="text-muted-foreground text-sm">
+                                                  ยังไม่มีรูปภาพ
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          {/* รูปออกงาน */}
+                                          <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-100 dark:bg-orange-950/30">
+                                                <LogOut className="h-3.5 w-3.5 text-orange-600" />
+                                              </div>
+                                              <span className="text-sm font-semibold text-orange-600">
+                                                รูปออกงาน
+                                              </span>
+                                              <span className="text-muted-foreground text-xs">
+                                                {checkOutTime}
+                                              </span>
+                                            </div>
+                                            <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
+                                              <div className="flex flex-col items-center gap-2">
+                                                <ImageIcon className="text-muted-foreground h-12 w-12" />
+                                                <span className="text-muted-foreground text-sm">
+                                                  ยังไม่มีรูปภาพ
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </DialogContent>
+                                    </Dialog>
+                                  </div>
+                                </div>
+
+                                {/* Summary */}
+                                <div className="mt-3 flex items-center justify-between border-t pt-3">
+                                  <span className="text-muted-foreground text-xs">
+                                    ชั่วโมงทำงาน
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold">
+                                      {fmtHours(hours)}
+                                    </span>
+                                    <Badge
+                                      variant={
+                                        recIsFull ? 'default' : 'destructive'
+                                      }
+                                      className="text-[10px]"
+                                    >
+                                      {recIsFull ? '✅ ครบ' : '⚠️ ไม่ครบ'}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                    </div>
+                      </DialogContent>
+                    </Dialog>
                   );
                 })
               ) : (
@@ -681,6 +985,22 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
                 </div>
               )}
             </div>
+
+            {/* Pagination */}
+            {groupedList.length > 0 && totalDailyPages > 0 && (
+              <div className="flex items-center justify-center border-t p-4">
+                <PaginationControll
+                  page={dailyPage}
+                  totalPages={totalDailyPages}
+                  limit={dailyLimit}
+                  onPageChange={(p) => setDailyPage(p)}
+                  onLimitChange={(l) => {
+                    setDailyLimit(l);
+                    setDailyPage(1);
+                  }}
+                />
+              </div>
+            )}
           </div>
         );
       })()}
