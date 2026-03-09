@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // ICON DEVICE
 const DeviceIcon: React.FC<{ device: string | null }> = ({ device }) => {
@@ -186,52 +187,63 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                     รูปภาพเข้า-ออกงาน • {formatDate(record.check_in)}
                   </DialogTitle>
                 </DialogHeader>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {/* รูปเข้างาน */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-green-100 dark:bg-green-950/30">
-                        <LogIn className="h-3.5 w-3.5 text-green-600" />
-                      </div>
-                      <span className="text-sm font-semibold text-green-600">
-                        รูปเข้างาน
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {formatTime(record.check_in)}
-                      </span>
-                    </div>
-                    <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
-                      <div className="flex flex-col items-center gap-2">
-                        <ImageIcon className="text-muted-foreground h-12 w-12" />
-                        <span className="text-muted-foreground text-sm">
-                          ยังไม่มีรูปภาพ
+                <ScrollArea
+                  className="mt-4 w-full pr-4"
+                  style={{ maxHeight: 'calc(85vh - 100px)' }}
+                >
+                  <div className="grid gap-6 pt-2 pb-10 sm:grid-cols-2">
+                    {/* รูปเข้างาน */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-green-100 dark:bg-green-950/30">
+                          <LogIn className="h-3.5 w-3.5 text-green-600" />
+                        </div>
+                        <span className="text-sm font-semibold text-green-600">
+                          รูปเข้างาน
                         </span>
+                        <span className="text-muted-foreground text-xs font-medium">
+                          {formatTime(record.check_in)} น.
+                        </span>
+                      </div>
+                      <div className="bg-muted overflow-hidden rounded-xl border">
+                        <div className="flex aspect-square w-full items-center justify-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
+                            <span className="text-muted-foreground text-sm font-medium">
+                              ยังไม่มีรูปภาพ
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* รูปออกงาน */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-100 dark:bg-orange-950/30">
+                          <LogOut className="h-3.5 w-3.5 text-orange-600" />
+                        </div>
+                        <span className="text-sm font-semibold text-orange-600">
+                          รูปออกงาน
+                        </span>
+                        <span className="text-muted-foreground text-xs font-medium">
+                          {record.check_out
+                            ? `${formatTime(record.check_out)} น.`
+                            : '-'}
+                        </span>
+                      </div>
+                      <div className="bg-muted overflow-hidden rounded-xl border">
+                        <div className="flex aspect-square w-full items-center justify-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
+                            <span className="text-muted-foreground text-sm font-medium">
+                              ยังไม่มีรูปภาพ
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  {/* รูปออกงาน */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-100 dark:bg-orange-950/30">
-                        <LogOut className="h-3.5 w-3.5 text-orange-600" />
-                      </div>
-                      <span className="text-sm font-semibold text-orange-600">
-                        รูปออกงาน
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {record.check_out ? formatTime(record.check_out) : '-'}
-                      </span>
-                    </div>
-                    <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-lg border">
-                      <div className="flex flex-col items-center gap-2">
-                        <ImageIcon className="text-muted-foreground h-12 w-12" />
-                        <span className="text-muted-foreground text-sm">
-                          ยังไม่มีรูปภาพ
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                </ScrollArea>
               </DialogContent>
             </Dialog>
           </div>
