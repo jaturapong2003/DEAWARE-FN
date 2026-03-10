@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { AttendanceResponse, AttendanceRecord } from '@/@types/Attendance';
 import type { DateRange } from 'react-day-picker';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import keycloak from '@/config/keycloak';
 import apiClient from '@/lib/apiClient';
@@ -19,7 +19,10 @@ import AttendanceCard from '../../components/common/AttendanceCard';
 
 // Main AttendanceMePage
 function AttendanceMePage() {
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date(),
+  });
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
 
@@ -75,7 +78,7 @@ function AttendanceMePage() {
     (r: { check_out: string | null }) => !!r.check_out
   ).length;
 
-  // records from API are already filtered if using server-side filtering
+  // records from API
   const filteredRecords = data?.records || [];
 
   return (
@@ -91,33 +94,37 @@ function AttendanceMePage() {
               </p>
             </div>
 
-            {/* ช่องเลือกช่วงวันที่ (popover) */}
-            <div className="relative w-full md:w-auto">
+            {/* ช่องเลือกช่วงวันที่ */}
+            <div className="flex items-center gap-2">
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-center">
-                    <span>
+                  <Button
+                    variant="outline"
+                    className="flex h-10 items-center gap-3 px-4"
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                    <span className="text-sm">
                       {dateRange?.from
                         ? dateRange.to
                           ? `${dateRange.from.toLocaleDateString('th-TH', {
                               year: 'numeric',
-                              month: 'long',
+                              month: 'short',
                               day: 'numeric',
                             })} - ${dateRange.to.toLocaleDateString('th-TH', {
                               year: 'numeric',
-                              month: 'long',
+                              month: 'short',
                               day: 'numeric',
                             })}`
                           : `${dateRange.from.toLocaleDateString('th-TH', {
                               year: 'numeric',
-                              month: 'long',
+                              month: 'short',
                               day: 'numeric',
                             })}`
                         : 'เลือกช่วงวันที่'}
                     </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-1">
+                <PopoverContent className="w-auto p-1" align="end">
                   <DatePicker
                     mode="range"
                     defaultMonth={dateRange?.from}
@@ -130,6 +137,14 @@ function AttendanceMePage() {
                   />
                 </PopoverContent>
               </Popover>
+              {dateRange && (
+                <button
+                  onClick={() => setDateRange(undefined)}
+                  className="text-muted-foreground hover:text-foreground text-sm"
+                >
+                  ล้าง
+                </button>
+              )}
             </div>
           </div>
 
@@ -169,7 +184,7 @@ function AttendanceMePage() {
         </div>
       ) : (
         <div className="bg-card rounded-lg border p-12 text-center">
-          <CalendarIcon className="text-muted-foreground mx-auto h-12 w-12" />
+          <CalendarDays className="text-muted-foreground mx-auto h-12 w-12" />
           <h3 className="mt-4 text-lg font-semibold">ไม่พบบันทึก</h3>
           <p className="text-muted-foreground mt-2 text-sm">
             {dateRange

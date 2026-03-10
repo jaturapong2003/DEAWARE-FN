@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
 import useEmployeeById from '@/hooks/useEmployeeById';
+import useEmployeeAnalysis from '@/hooks/useEmployeeAnalysis';
 
 import type { DateRange } from 'react-day-picker';
 import type { EmployeesList } from '@/@types/Employees';
@@ -35,7 +36,10 @@ function EmployeeIdPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date(),
+  });
 
   // รับข้อมูลพนักงานจาก route state (ส่งมาจาก EmployeesPage)
   const stateEmployee = (location.state as { employee?: EmployeesList })
@@ -66,6 +70,13 @@ function EmployeeIdPage() {
     id,
     1,
     400,
+    dateRange?.from,
+    dateRange?.to ?? dateRange?.from
+  );
+
+  // ดึงข้อมูลวิเคราะห์จากฝั่ง Server
+  const { analysis } = useEmployeeAnalysis(
+    id,
     dateRange?.from,
     dateRange?.to ?? dateRange?.from
   );
@@ -235,35 +246,27 @@ function EmployeeIdPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="justify-start text-left font-normal"
+                  className="flex h-10 items-center gap-3 px-4"
                 >
-                  <CalendarDays className="mr-2 h-4 w-4" />
-                  {dateRange?.from ? (
-                    dateRange.to ? (
-                      <span>
-                        {dateRange.from.toLocaleDateString('th-TH', {
-                          day: 'numeric',
-                          month: 'short',
-                        })}
-                        {' - '}
-                        {dateRange.to.toLocaleDateString('th-TH', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </span>
-                    ) : (
-                      <span>
-                        {dateRange.from.toLocaleDateString('th-TH', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </span>
-                    )
-                  ) : (
-                    <span>เลือกช่วงวันที่</span>
-                  )}
+                  <CalendarDays className="h-4 w-4" />
+                  <span className="text-sm">
+                    {dateRange?.from
+                      ? dateRange.to
+                        ? `${dateRange.from.toLocaleDateString('th-TH', {
+                            day: 'numeric',
+                            month: 'short',
+                          })} - ${dateRange.to.toLocaleDateString('th-TH', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}`
+                        : dateRange.from.toLocaleDateString('th-TH', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                      : 'เลือกช่วงวันที่'}
+                  </span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
@@ -277,17 +280,13 @@ function EmployeeIdPage() {
                 />
               </PopoverContent>
             </Popover>
-            {dateRange?.from && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setDateRange(undefined);
-                }}
-                className="text-muted-foreground h-8 px-2 text-xs"
+            {dateRange && (
+              <button
+                onClick={() => setDateRange(undefined)}
+                className="text-muted-foreground hover:text-foreground text-sm"
               >
                 ล้าง
-              </Button>
+              </button>
             )}
           </div>
         </div>
@@ -298,6 +297,7 @@ function EmployeeIdPage() {
             employee={employee}
             records={dashboardRecords}
             total={total}
+            analysis={analysis}
           />
         </div>
       </div>

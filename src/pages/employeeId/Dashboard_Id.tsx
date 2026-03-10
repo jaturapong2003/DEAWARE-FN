@@ -3,6 +3,7 @@ import type { EmployeesList } from '@/@types/Employees';
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/date';
+import type { EmployeeAnalysisResponse } from '@/@types/Attendance';
 import {
   BarChart3,
   Clock,
@@ -47,6 +48,7 @@ interface DashboardIdProps {
   employee: EmployeesList;
   records: AttendanceRecord[];
   total: number;
+  analysis?: EmployeeAnalysisResponse['data'] | null;
 }
 
 // ============ Device Helpers ============
@@ -358,13 +360,34 @@ const CustomPieTooltip = ({
 
 // ============ Main Component ============
 
-function DashboardId({ employee, records, total }: DashboardIdProps) {
+function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
   // Pagination สำหรับชั่วโมงทำงานรายวัน
   const [dailyPage, setDailyPage] = useState(1);
   const [dailyLimit, setDailyLimit] = useState(10);
 
   // ใช้ useMemo เพื่อประสิทธิภาพเมื่อข้อมูลมีปริมาณมาก (สูงสุด 400 รายการ)
-  const barData = React.useMemo(() => buildBarData(records), [records]);
+  const barData = React.useMemo(() => {
+    if (analysis?.chart_data) {
+      return analysis.chart_data.map((d) => {
+        const dateObj = new Date(d.date);
+        const name = dateObj.toLocaleDateString('th-TH', {
+          day: 'numeric',
+          month: 'short',
+        });
+        const normal = Math.min(d.hours, FULL_HOURS);
+        const overtime = d.hours > FULL_HOURS ? d.hours - FULL_HOURS : 0;
+        return {
+          name,
+          normal: Math.floor(normal * 100) / 100,
+          overtime: Math.floor(overtime * 100) / 100,
+          total: d.hours,
+          isFull: d.status,
+        };
+      });
+    }
+    return buildBarData(records);
+  }, [records, analysis]);
+
   const monthlyGrades = React.useMemo(
     () => buildMonthlyGradeData(records),
     [records]
@@ -380,7 +403,44 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
     const totalForPie = pieData.reduce((sum, d) => sum + d.value, 0);
     const pieDataWithTotal = pieData.map((d) => ({ ...d, total: totalForPie }));
 
+    // ใช้ข้อมูลจาก analysis ถ้ามี
+    if (analysis?.summary) {
+      const summary = analysis.summary;
+      const totalWorkHours = summary.total_work_minutes / 60;
+      const fullCount = summary.success_days_count;
+      const avgWorkHours = summary.avg_hours_per_day;
+      const diffHours = summary.total_excess_minutes / 60;
+      const notFullCount = summary.partial_days_count;
+
+      const pieDataWithTotal = [
+        {
+          name: 'ครบ 9 ชม.',
+          value: fullCount,
+          color: '#22c55e',
+          total: fullCount + notFullCount,
+        },
+        {
+          name: 'ไม่ครบ 9 ชม.',
+          value: notFullCount,
+          color: '#f97316',
+          total: fullCount + notFullCount,
+        },
+      ].filter((d) => d.value > 0);
+
+      return {
+        pieDataWithTotal,
+        fullCount,
+        notFullCount,
+        totalWorkHours,
+        avgWorkHours,
+        diffHours,
+      };
+    }
+
     const fullCount = records.filter(isFullHours).length;
+    const notFullCount = records.filter(
+      (r) => r.check_in && !isFullHours(r)
+    ).length;
     const totalWorkHours = records.reduce((sum, r) => sum + calcHours(r), 0);
     const avgWorkHours =
       records.length > 0 ? totalWorkHours / records.length : 0;
@@ -391,18 +451,17 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
     return {
       pieDataWithTotal,
       fullCount,
+      notFullCount,
       totalWorkHours,
       avgWorkHours,
       diffHours,
     };
-  }, [records, selectedMonth]);
+  }, [records, selectedMonth, analysis]);
 
-  const notFullCount = records.filter(
-    (r) => r.check_in && !isFullHours(r)
-  ).length;
   const {
     pieDataWithTotal,
     fullCount,
+    notFullCount,
     totalWorkHours,
     avgWorkHours,
     diffHours,
@@ -426,40 +485,55 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <StatCard
+          icon={<LogIn className="h-5 w-5" />}
+          label="บันทึกทั้งหมด"
+          value={`${fullCount + notFullCount} วัน`}
+          subValue={analysis?.summary ? `ในเดือนปัจจุบัน` : `จากรายการทั้งหมด`}
+          color="text-indigo-600"
+        />
         <StatCard
           icon={<CalendarDays className="h-5 w-5" />}
           label="ชั่วโมงทำงานรวม"
           value={fmtHours(totalWorkHours)}
-          subValue={`จาก ${total} ครั้งที่บันทึก`}
+          subValue={
+            analysis?.summary
+              ? `รวมเวลาทั้งหมดในระบบ`
+              : `จาก ${total} ครั้งที่บันทึก`
+          }
           color="text-primary"
         />
         <StatCard
           icon={<CheckCircle2 className="h-5 w-5" />}
-          label="ครบ 9 ชม."
-          value={`${fullCount} ครั้ง`}
-          subValue={`${records.filter((r) => r.check_in).length > 0 ? ((fullCount / records.filter((r) => r.check_in).length) * 100).toFixed(0) : 0}% ของทั้งหมด`}
+          label="ทำครบ 9 ชม. (Success)"
+          value={`${fullCount} วัน`}
+          subValue={
+            analysis?.summary
+              ? `${((fullCount / (fullCount + notFullCount || 1)) * 100).toFixed(0)}% ของวันที่มีบันทึก`
+              : `${records.filter((r) => r.check_in).length > 0 ? ((fullCount / records.filter((r) => r.check_in).length) * 100).toFixed(0) : 0}% ของทั้งหมด`
+          }
           color="text-green-600"
         />
         <StatCard
           icon={<AlertCircle className="h-5 w-5" />}
-          label="ไม่ครบ 9 ชม."
-          value={`${notFullCount} ครั้ง`}
+          label="ไม่ครบ (Partial)"
+          value={`${notFullCount} วัน`}
           subValue={
             diffHours < 0
               ? `ขาดรวม ${fmtHours(Math.abs(diffHours))}`
-              : `เกินรวม ${fmtHours(diffHours)}`
+              : `เกินแผน ${fmtHours(diffHours)}`
           }
           color="text-orange-500"
         />
         <StatCard
           icon={<Clock className="h-5 w-5" />}
-          label="ชม. ทำงานเฉลี่ย"
+          label="เฉลี่ยชั่วโมง/วัน"
           value={fmtHours(avgWorkHours)}
           subValue={
             avgWorkHours >= FULL_HOURS
-              ? '✅ เฉลี่ยครบ 9 ชม.'
-              : `⚠️ ขาดอีก ${fmtHours(FULL_HOURS - avgWorkHours)}`
+              ? '✅ สูงกว่าเกณฑ์มาตรฐาน'
+              : `⚠️ ต่ำกว่าเกณฑ์ ${fmtHours(FULL_HOURS - avgWorkHours)}`
           }
           color="text-blue-600"
         />
@@ -494,6 +568,7 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
                   axisLine={false}
                   domain={[0, 14]}
                   ticks={[0, 3, 6, 9, 12]}
+                  interval={0}
                   unit=" ชม."
                 />
                 {/* เส้นเกณฑ์ 9 ชม. */}
@@ -577,9 +652,10 @@ function DashboardId({ employee, records, total }: DashboardIdProps) {
                   {selectedMonth.totalDays} วัน
                 </p>
                 <p
-                  className={`text-base font-bold ${gradeColor(selectedMonth.grade).text}`}
+                  className={`text-base font-bold ${gradeColor((analysis?.summary?.performance_grade as 'A' | 'B' | 'C') || selectedMonth.grade).text}`}
                 >
-                  เกรด {selectedMonth.grade}
+                  เกรด{' '}
+                  {analysis?.summary?.performance_grade || selectedMonth.grade}
                 </p>
               </div>
             )}
