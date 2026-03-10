@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
 import useEmployeeById from '@/hooks/useEmployeeById';
+import { fetchWithAuth } from '@/config/fetctWithAuth';
 
 import type { DateRange } from 'react-day-picker';
 import type { EmployeesList } from '@/@types/Employees';
@@ -9,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { getInitials } from '@/lib/helper';
 import LoadingPage from '@/components/common/LoadingPage';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -27,6 +30,155 @@ import {
   UserRoundCog,
 } from 'lucide-react';
 import DashboardId from './Dashboard_Id';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Field, FieldGroup } from '@/components/ui/field';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import toast from 'react-hot-toast';
+
+// Types for email
+interface SendEmailRequest {
+  subject: string;
+  details: string;
+  type: 'normal' | 'warning';
+}
+
+interface SendEmailResponse {
+  success: boolean;
+  message: string;
+}
+
+// Email Dialog
+function EmaillDialog({ employeeId }: { employeeId: string }) {
+  const [open, setOpen] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [details, setDetails] = useState('');
+  const [emailType, setEmailType] = useState<'normal' | 'warning'>('normal');
+
+  // Mutation for sending email
+  const sendEmailMutation = useMutation<
+    SendEmailResponse,
+    Error,
+    SendEmailRequest
+  >({
+    mutationFn: async (emailData) => {
+      return await fetchWithAuth<SendEmailResponse>(
+        `/api/employee/${employeeId}/send-email`,
+        {
+          method: 'POST',
+          body: JSON.stringify(emailData),
+        }
+      );
+    },
+    onSuccess: (data) => {
+      alert(data.message || 'ส่งอีเมลสำเร็จ');
+      // รีเซ็ตฟอร์มและปิด dialog
+      setSubject('');
+      setDetails('');
+      setEmailType('normal');
+      setOpen(false);
+    },
+    onError: (error) => {
+      toast.error(`เกิดข้อผิดพลาด: ${error.message}`);
+    },
+  });
+
+  const handleSubmitEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    console.log('subject: ', subject);
+    console.log('details: ', details);
+    console.log('type: ', emailType);
+
+    // ตรวจสอบข้อมูล
+    if (!subject.trim() || !details.trim()) {
+      toast.error('กรุณากรอกหัวข้อและรายละเอียด');
+      return;
+    }
+
+    // ส่งข้อมูลผ่าน mutation
+    sendEmailMutation.mutate({
+      subject: subject.trim(),
+      details: details.trim(),
+      type: emailType,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant={'outline'}>
+          <Mail />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <form onSubmit={handleSubmitEmail}>
+          <DialogHeader>
+            <DialogTitle>ฟอร์มส่งอีเมลให้พนักงาน</DialogTitle>
+          </DialogHeader>
+          <FieldGroup className='mt-5'>
+            <Field>
+              <Label>หัวข้อ</Label>
+              <Input
+                placeholder="กรอกหัวข้อที่นี่"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+              />
+            </Field>
+            <Field>
+              <Label>รายละเอียด</Label>
+              <Input
+                placeholder="กรอกรายละเอียดที่นี่"
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+              />
+            </Field>
+            <Field>
+              <Label>ประเภทจดหมาย</Label>
+              <RadioGroup
+                value={emailType}
+                onValueChange={(value) =>
+                  setEmailType(value as 'normal' | 'warning')
+                }
+              >
+                <Field orientation={'horizontal'}>
+                  <RadioGroupItem id="normal" value="normal" />
+                  <Label htmlFor="normal">จดหมายทั่วไป</Label>
+                </Field>
+                <Field orientation={'horizontal'}>
+                  <RadioGroupItem id="warning" value="warning" />
+                  <Label htmlFor="warning">จดหมายแจ้งเตือน</Label>
+                </Field>
+              </RadioGroup>
+            </Field>
+          </FieldGroup>
+          <DialogFooter className='mt-6'>
+            <DialogClose asChild>
+              <Button
+                variant={'outline'}
+                type="button"
+                disabled={sendEmailMutation.isPending}
+              >
+                ยกเลิก
+              </Button>
+            </DialogClose>
+            <Button type="submit" disabled={sendEmailMutation.isPending}>
+              {sendEmailMutation.isPending ? 'กำลังส่ง...' : 'ส่งอีเมล'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /**
  * หน้ารายละเอียดพนักงาน - แสดงโปรไฟล์และประวัติการเข้างาน
@@ -37,11 +189,11 @@ function EmployeeIdPage() {
   const location = useLocation();
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
-  // รับข้อมูลพนักงานจาก route state (ส่งมาจาก EmployeesPage)
+  // รับข้อมูลพนักงานจาก route state
   const stateEmployee = (location.state as { employee?: EmployeesList })
     ?.employee;
 
-  // ใช้ hook เพื่อ fetch ข้อมูลจาก API ถ้าไม่มี location.state (เช่น refresh หน้า)
+  // fetch Employee
   const { employee, loading: employeeLoading } = useEmployeeById(
     id,
     stateEmployee
@@ -109,15 +261,12 @@ function EmployeeIdPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* 🔙 ปุ่มกลับ */}
-      <button
-        onClick={handleGoBack}
-        className="text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors"
-      >
+      <Button variant={'link'} onClick={handleGoBack}>
         <ArrowLeft className="h-4 w-4" />
         <span className="text-sm font-medium">กลับไปหน้ารายชื่อ</span>
-      </button>
+      </Button>
 
       {/* 👤 Profile Card */}
       <div className="bg-card overflow-hidden rounded-lg border">
@@ -138,15 +287,17 @@ function EmployeeIdPage() {
                 {getInitials(employee.display_name)}
               </AvatarFallback>
             </Avatar>
-
-            <div className="flex-1 text-center sm:pb-2 sm:text-left">
-              <h1 className="text-xl font-bold sm:text-2xl">
-                {employee.display_name || 'ไม่มีชื่อ'}
-              </h1>
-              <Badge variant="secondary" className="mt-1 gap-1">
-                <UserRoundCog className="h-3.5 w-3.5" />
-                {employee.position || 'พนักงาน'}
-              </Badge>
+            <div className="flex w-full items-center justify-between">
+              <div className="flex-1 text-center sm:pb-2 sm:text-left">
+                <h1 className="text-xl font-bold sm:text-2xl">
+                  {employee.display_name || 'ไม่มีชื่อ'}
+                </h1>
+                <Badge variant="secondary" className="mt-1 gap-1">
+                  <UserRoundCog className="h-3.5 w-3.5" />
+                  {employee.position || 'พนักงาน'}
+                </Badge>
+              </div>
+              <EmaillDialog employeeId={employee.user_id} />
             </div>
           </div>
 
