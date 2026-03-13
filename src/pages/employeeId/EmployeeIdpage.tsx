@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
 import useEmployeeById from '@/hooks/useEmployeeById';
 import useEmployeeAnalysis from '@/hooks/useEmployeeAnalysis';
+import { useKeycloak } from '@react-keycloak/web';
 
 import type { DateRange } from 'react-day-picker';
 import type { EmployeesList } from '@/@types/Employees';
@@ -86,8 +87,10 @@ function EmployeeIdPage() {
     navigate('/employees');
   };
 
+  const { keycloak } = useKeycloak();
+
   // กำลังโหลดข้อมูลพนักงาน
-  if (employeeLoading) {
+  if (employeeLoading && keycloak.authenticated) {
     return <LoadingPage message="กำลังโหลดข้อมูลพนักงาน..." />;
   }
 
@@ -282,7 +285,16 @@ function EmployeeIdPage() {
             </Popover>
             {dateRange && (
               <button
-                onClick={() => setDateRange(undefined)}
+                onClick={() =>
+                  setDateRange({
+                    from: new Date(
+                      new Date().getFullYear(),
+                      new Date().getMonth(),
+                      1
+                    ),
+                    to: new Date(),
+                  })
+                }
                 className="text-muted-foreground hover:text-foreground text-sm"
               >
                 ล้าง

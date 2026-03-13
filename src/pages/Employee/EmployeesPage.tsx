@@ -15,9 +15,9 @@ import {
 } from 'lucide-react';
 import { getInitials } from '@/lib/helper';
 import apiClient from '@/lib/apiClient';
-import keycloak from '@/config/keycloak';
 import LoadingPage from '@/components/common/LoadingPage';
 import ErrorPage from '@/components/common/ErrorPage';
+import { useKeycloak } from '@react-keycloak/web';
 
 // Employee Card
 const EmployeeCard: React.FC<{ employee: EmployeesList }> = ({ employee }) => {
@@ -81,6 +81,7 @@ const EmployeeCard: React.FC<{ employee: EmployeesList }> = ({ employee }) => {
 function EmployeesPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const { keycloak } = useKeycloak();
 
   const { data, isLoading, error } = useQuery<EmployeesList[]>({
     queryKey: ['employee/list'],
@@ -92,7 +93,8 @@ function EmployeesPage() {
   });
 
   if (error) return <ErrorPage />;
-  if (isLoading) return <LoadingPage message="กำลังโหลดข้อมูลพนักงาน..." />;
+  if (isLoading && keycloak.authenticated)
+    return <LoadingPage message="กำลังโหลดข้อมูลพนักงาน..." />;
 
   // กรองข้อมูลพนักงานตามคำค้นหา
   const filteredEmployees = (data || []).filter(

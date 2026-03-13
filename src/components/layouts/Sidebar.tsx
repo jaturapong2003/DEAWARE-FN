@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import DEAWARE from '@/assets/deaware.webp';
 import { navigationItems } from '@/lib/itemMenu';
+import useAuthStore from '@/stores/authStore';
 
 const settingsItems = [
   {
@@ -57,21 +58,37 @@ const AppSidebar: React.FC = () => {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                    className="group hover:bg-sidebar-accent/80 data-[active=true]:from-primary/20 data-[active=true]:to-primary/5 data-[active=true]:text-primary transition-all data-[active=true]:bg-linear-to-r data-[active=true]:shadow-sm"
-                  >
-                    <Link to={item.url}>
-                      <item.icon className="transition-transform group-hover:scale-110" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navigationItems.map((item) => {
+                // ถ้าเมนูต้องการสิทธิ์ admin ให้เช็คสิทธิ์ก่อน
+                const isAdmin =
+                  keycloak.hasRealmRole('admin') ||
+                  keycloak.hasResourceRole(
+                    'admin',
+                    import.meta.env.VITE_CLIENT_ID
+                  ) ||
+                  keycloak.hasResourceRole('admin', 'DEAWARE') || // กันเหนียวเผื่อชื่อ client ไม่ตรง
+                  keycloak.hasResourceRole('admin', 'DFAWARF');
+
+                if (item.role === 'admin' && !isAdmin) {
+                  return null;
+                }
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.url)}
+                      tooltip={item.title}
+                      className="group hover:bg-sidebar-accent/80 data-[active=true]:from-primary/20 data-[active=true]:to-primary/5 data-[active=true]:text-primary transition-all data-[active=true]:bg-linear-to-r data-[active=true]:shadow-sm"
+                    >
+                      <Link to={item.url}>
+                        <item.icon className="transition-transform group-hover:scale-110" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -106,6 +123,7 @@ const AppSidebar: React.FC = () => {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => {
+                useAuthStore.getState().setLoggingOut(true);
                 keycloak.logout({ redirectUri: window.location.origin });
               }}
               tooltip="Logout"

@@ -106,7 +106,7 @@ const calcMonthlyGrade = (
 };
 
 /** สีเกรด */
-const gradeColor = (grade: 'A' | 'B' | 'C') => {
+const gradeColor = (grade: string | null | undefined) => {
   switch (grade) {
     case 'A':
       return {
@@ -123,7 +123,20 @@ const gradeColor = (grade: 'A' | 'B' | 'C') => {
         bg: 'bg-orange-100 dark:bg-orange-950/20',
         text: 'text-orange-700 dark:text-orange-400',
       };
+    default:
+      return {
+        bg: 'bg-muted/50',
+        text: 'text-muted-foreground',
+      };
   }
+};
+
+/** ข้อความกำกับระดับผลงาน */
+const getGradeLabel = (grade: string | null | undefined): string => {
+  const g = (grade || '').toUpperCase();
+  if (g === 'A') return 'ดีเยี่ยม';
+  if (g === 'B') return 'ดี';
+  return 'ควรปรับปรุง';
 };
 
 /** สร้างข้อมูลการให้เกรดรายเดือน */
@@ -365,9 +378,14 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
   const [dailyPage, setDailyPage] = useState(1);
   const [dailyLimit, setDailyLimit] = useState(10);
 
+  // รีเซ็ตหน้าเมื่อข้อมูลหลักเปลี่ยน (เช่น เปลี่ยนฟิลเตอร์วันที่)
+  React.useEffect(() => {
+    setDailyPage(1);
+  }, [records, analysis]);
+
   // ใช้ useMemo เพื่อประสิทธิภาพเมื่อข้อมูลมีปริมาณมาก (สูงสุด 400 รายการ)
   const barData = React.useMemo(() => {
-    if (analysis?.chart_data) {
+    if (Array.isArray(analysis?.chart_data)) {
       return analysis.chart_data.map((d) => {
         const dateObj = new Date(d.date);
         const name = dateObj.toLocaleDateString('th-TH', {
@@ -396,68 +414,6 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
   // เลือกเดือนแรกที่มีข้อมูล
   const selectedMonth = monthlyGrades[0];
 
-  const stats = React.useMemo(() => {
-    const pieData = selectedMonth
-      ? buildMonthlyDetailPieData(records, selectedMonth.monthKey)
-      : [];
-    const totalForPie = pieData.reduce((sum, d) => sum + d.value, 0);
-    const pieDataWithTotal = pieData.map((d) => ({ ...d, total: totalForPie }));
-
-    // ใช้ข้อมูลจาก analysis ถ้ามี
-    if (analysis?.summary) {
-      const summary = analysis.summary;
-      const totalWorkHours = summary.total_work_minutes / 60;
-      const fullCount = summary.success_days_count;
-      const avgWorkHours = summary.avg_hours_per_day;
-      const diffHours = summary.total_excess_minutes / 60;
-      const notFullCount = summary.partial_days_count;
-
-      const pieDataWithTotal = [
-        {
-          name: 'ครบ 9 ชม.',
-          value: fullCount,
-          color: '#22c55e',
-          total: fullCount + notFullCount,
-        },
-        {
-          name: 'ไม่ครบ 9 ชม.',
-          value: notFullCount,
-          color: '#f97316',
-          total: fullCount + notFullCount,
-        },
-      ].filter((d) => d.value > 0);
-
-      return {
-        pieDataWithTotal,
-        fullCount,
-        notFullCount,
-        totalWorkHours,
-        avgWorkHours,
-        diffHours,
-      };
-    }
-
-    const fullCount = records.filter(isFullHours).length;
-    const notFullCount = records.filter(
-      (r) => r.check_in && !isFullHours(r)
-    ).length;
-    const totalWorkHours = records.reduce((sum, r) => sum + calcHours(r), 0);
-    const avgWorkHours =
-      records.length > 0 ? totalWorkHours / records.length : 0;
-    const expectedTotalHours =
-      records.filter((r) => r.check_in).length * FULL_HOURS;
-    const diffHours = totalWorkHours - expectedTotalHours;
-
-    return {
-      pieDataWithTotal,
-      fullCount,
-      notFullCount,
-      totalWorkHours,
-      avgWorkHours,
-      diffHours,
-    };
-  }, [records, selectedMonth, analysis]);
-
   const {
     pieDataWithTotal,
     fullCount,
@@ -465,7 +421,64 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
     totalWorkHours,
     avgWorkHours,
     diffHours,
-  } = stats;
+  } = React.useMemo(() => {
+    // 1. ถ้ามีข้อมูลจาก analysis summary (แม่นยำที่สุดจาก backend)
+    if (analysis?.summary) {
+      const summary = analysis.summary;
+      const f = summary.success_days_count || 0;
+      const nf = summary.partial_days_count || 0;
+      const totalHrs = summary.total_work_minutes / 60;
+      const diffHrs = summary.total_excess_minutes / 60;
+      const avgHrs = summary.avg_hours_per_day || 0;
+
+      const pie = [
+        {
+          name: 'ครบ 9 ชม.',
+          value: f,
+          color: '#22c55e',
+          total: f + nf,
+        },
+        {
+          name: 'ไม่ครบ 9 ชม.',
+          value: nf,
+          color: '#f97316',
+          total: f + nf,
+        },
+      ].filter((d) => d.value > 0);
+
+      return {
+        pieDataWithTotal: pie,
+        fullCount: f,
+        notFullCount: nf,
+        totalWorkHours: totalHrs,
+        avgWorkHours: avgHrs,
+        diffHours: diffHrs,
+      };
+    }
+
+    // 2. ถ้าไม่มี analysis (Fallback ใช้คำนวณจาก records ในเครื่อง)
+    const pieD = selectedMonth
+      ? buildMonthlyDetailPieData(records, selectedMonth.monthKey)
+      : [];
+    const totalP = pieD.reduce((sum, d) => sum + d.value, 0);
+    const pieWithTotal = pieD.map((d) => ({ ...d, total: totalP }));
+
+    const f = records.filter(isFullHours).length;
+    const nf = records.filter((r) => r.check_in && !isFullHours(r)).length;
+    const tHrs = records.reduce((sum, r) => sum + calcHours(r), 0);
+    const avgHrs = records.length > 0 ? tHrs / records.length : 0;
+    const expectedT = records.filter((r) => r.check_in).length * FULL_HOURS;
+    const dHrs = tHrs - expectedT;
+
+    return {
+      pieDataWithTotal: pieWithTotal,
+      fullCount: f,
+      notFullCount: nf,
+      totalWorkHours: tHrs,
+      avgWorkHours: avgHrs,
+      diffHours: dHrs,
+    };
+  }, [analysis, records, selectedMonth]);
 
   return (
     <div className="space-y-6">
@@ -592,6 +605,8 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
                   radius={[0, 0, 0, 0]}
                   maxBarSize={40}
                   name="ชั่วโมงทำงาน"
+                  isAnimationActive={true}
+                  animationDuration={1000}
                 >
                   {barData.map((entry, idx) => (
                     <Cell
@@ -608,6 +623,8 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
                   radius={[4, 4, 0, 0]}
                   maxBarSize={40}
                   name="เกิน (>9 ชม.)"
+                  isAnimationActive={true}
+                  animationDuration={1000}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -646,16 +663,18 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
                   )}
                 </p>
                 <p
-                  className={`text-xs font-medium ${gradeColor(selectedMonth.grade).text}`}
-                >
-                  ทำงานครบ 9 ชม. {selectedMonth.fullDays} จาก{' '}
-                  {selectedMonth.totalDays} วัน
-                </p>
-                <p
-                  className={`text-base font-bold ${gradeColor((analysis?.summary?.performance_grade as 'A' | 'B' | 'C') || selectedMonth.grade).text}`}
+                  className={`text-base font-bold ${gradeColor(analysis?.summary?.performance_grade || selectedMonth.grade).text}`}
                 >
                   เกรด{' '}
-                  {analysis?.summary?.performance_grade || selectedMonth.grade}
+                  {analysis?.summary?.performance_grade || selectedMonth.grade}{' '}
+                  <span className="text-sm font-medium opacity-80">
+                    (
+                    {getGradeLabel(
+                      analysis?.summary?.performance_grade ||
+                        selectedMonth.grade
+                    )}
+                    )
+                  </span>
                 </p>
               </div>
             )}
@@ -673,6 +692,8 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
                   paddingAngle={3}
                   dataKey="value"
                   stroke="none"
+                  isAnimationActive={true}
+                  animationDuration={1000}
                 >
                   {pieDataWithTotal.map((entry, i) => (
                     <Cell key={`cell-${i}`} fill={entry.color} />

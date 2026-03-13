@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import ErrorPage from '@/components/common/ErrorPage';
 import LoadingPage from '@/components/common/LoadingPage';
 import { useProfile } from '@/hooks/useProfile';
+import { useKeycloak } from '@react-keycloak/web';
 
 // Main Home page
 const HomePage: React.FC = () => {
@@ -34,7 +35,13 @@ const HomePage: React.FC = () => {
     [profile]
   );
 
+  const { keycloak } = useKeycloak();
+
   // Loading
+  if (!keycloak.authenticated) {
+    return null;
+  }
+
   if (isLoading || !profile) {
     return <LoadingPage message="กำลังโหลดข้อมูล..." fullScreen={true} />;
   }
