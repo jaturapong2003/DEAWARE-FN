@@ -78,7 +78,7 @@ function AttendanceMePage() {
 
   return (
     <div className="space-y-6">
-      {/* 📊 Dashboard Section */}
+      {/* Dashboard Section */}
       <div className="bg-card rounded-lg border">
         <div className="flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -88,7 +88,7 @@ function AttendanceMePage() {
             </p>
           </div>
 
-          {/* 📅 Date Picker */}
+          {/* Date Picker */}
           <div className="flex items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
