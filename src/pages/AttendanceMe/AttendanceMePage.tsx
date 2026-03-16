@@ -77,27 +77,31 @@ function AttendanceMePage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 📊 Dashboard Section */}
-      <div className="bg-card rounded-lg border">
-        <div className="flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-bold">ภาพรวมการทำงานของคุณ</h2>
-            <p className="text-muted-foreground text-sm">
-              แดชบอร์ดวิเคราะห์ประวัติการเข้า-ออกงาน
-            </p>
-          </div>
+    <div className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="flex flex-col items-start gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-xl space-y-2">
+          <h2 className="flex items-center gap-3 text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            <div className="h-8 w-1.5 rounded-full bg-primary/80" />
+            ภาพรวมการทำงาน
+          </h2>
+          <p className="text-base sm:text-lg text-muted-foreground/80 pl-4 sm:pl-5">
+            ติดตามประวัติและสถิติการเข้า-ออกงานของคุณอย่างละเอียดในแต่ละช่วงเวลา
+          </p>
+        </div>
 
-          {/* 📅 Date Picker */}
-          <div className="flex items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="flex h-10 items-center gap-3 px-4"
-                >
-                  <CalendarDays className="h-4 w-4" />
-                  <span className="text-sm">
+        {/* 📅 Date Picker */}
+        <div className="flex w-full flex-col items-start gap-4 sm:w-auto sm:flex-row sm:items-center">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-border/60 bg-background/50 hover:border-border hover:bg-accent/50 flex h-12 w-full items-center justify-between gap-3 rounded-xl px-5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-md sm:w-auto"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 text-primary flex rounded-xl p-2">
+                    <CalendarDays className="h-5 w-5" />
+                  </div>
+                  <span className="text-[15px] font-semibold tracking-wide">
                     {dateRange?.from
                       ? dateRange.to
                         ? `${dateRange.from.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })} - ${dateRange.to.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}`
@@ -106,47 +110,47 @@ function AttendanceMePage() {
                             month: 'short',
                             year: 'numeric',
                           })
-                      : 'เลือกช่วงวันที่'}
+                      : 'เลือกช่วงเวลา'}
                   </span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="range"
-                  selected={dateRange}
-                  onSelect={setDateRange}
-                  captionLayout="dropdown"
-                />
-              </PopoverContent>
-            </Popover>
-            {dateRange && (
-              <button
-                onClick={() =>
-                  setDateRange({
-                    from: new Date(
-                      new Date().getFullYear(),
-                      new Date().getMonth(),
-                      1
-                    ),
-                    to: new Date(),
-                  })
-                }
-                className="text-muted-foreground hover:text-foreground text-sm"
-              >
-                ล้าง
-              </button>
-            )}
-          </div>
+                </div>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={setDateRange}
+                captionLayout="dropdown"
+              />
+            </PopoverContent>
+          </Popover>
+          {dateRange && (
+            <button
+              onClick={() =>
+                setDateRange({
+                  from: new Date(
+                    new Date().getFullYear(),
+                    new Date().getMonth(),
+                    1
+                  ),
+                  to: new Date(),
+                })
+              }
+              className="text-muted-foreground hover:text-foreground px-2 text-sm font-semibold transition-colors"
+            >
+              รีเซ็ตเวลา
+            </button>
+          )}
         </div>
+      </div>
 
-        <div className="p-4">
-          <DashboardId
-            employee={employeeDataForDashboard}
-            records={dashboardRecords}
-            total={total}
-            analysis={analysis}
-          />
-        </div>
+      <div className="pt-2">
+        <DashboardId
+          employee={employeeDataForDashboard}
+          records={dashboardRecords}
+          total={total}
+          analysis={analysis}
+        />
       </div>
     </div>
   );

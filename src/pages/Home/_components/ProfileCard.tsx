@@ -38,10 +38,10 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
   }, []);
 
   return (
-    <div className="bg-card overflow-hidden rounded-lg border shadow-sm transition-all hover:shadow-md">
+    <div className="bg-card overflow-hidden rounded-xl border border-border shadow-sm transition-all hover:shadow-md">
       {/* Header พร้อมเวลา - Responsive */}
       <div className="from-primary/5 to-accent/5 flex flex-col gap-2 bg-linear-to-r via-transparent p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-        <h2 className="from-primary to-primary/70 bg-linear-to-r bg-clip-text text-lg font-bold text-transparent sm:text-xl">
+        <h2 className="text-lg font-bold text-foreground sm:text-xl">
           ข้อมูลพนักงาน
         </h2>
         <div className="text-muted-foreground flex items-center gap-2">
@@ -89,7 +89,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
               <h4 className="text-foreground/90 text-base font-semibold sm:text-lg">
                 ข้อมูลส่วนตัว
               </h4>
-              <Separator className="bg-border/50" />
+              <Separator className="bg-border" />
             </div>
 
             {/* Grid 1 คอลัมน์บน mobile, 2 คอลัมน์บน tablet+ */}

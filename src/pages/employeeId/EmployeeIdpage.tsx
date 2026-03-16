@@ -105,7 +105,7 @@ function EmployeeIdPage() {
           <ArrowLeft className="h-4 w-4" />
           <span className="text-sm font-medium">กลับไปหน้ารายชื่อ</span>
         </button>
-        <div className="bg-card rounded-lg border p-12 text-center">
+        <div className="bg-card rounded-xl border border-border p-12 text-center shadow-sm dark:border-border">
           <AlertTriangle className="text-muted-foreground mx-auto h-12 w-12" />
           <h3 className="mt-4 text-lg font-semibold">ไม่พบข้อมูลพนักงาน</h3>
           <p className="text-muted-foreground mt-2 text-sm">
@@ -134,7 +134,7 @@ function EmployeeIdPage() {
       </button>
 
       {/* 👤 Profile Card */}
-      <div className="bg-card overflow-hidden rounded-lg border">
+      <div className="bg-card overflow-hidden rounded-xl border border-border shadow-sm dark:border-border">
         {/* Header gradient */}
         <div className="from-primary/20 to-primary/5 h-24 bg-linear-to-r sm:h-32" />
 
@@ -167,7 +167,7 @@ function EmployeeIdPage() {
           {/* ข้อมูลรายละเอียด */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* User ID */}
-            <div className="group bg-muted/50 hover:bg-muted/80 flex cursor-default items-center gap-3 rounded-lg p-3 transition-colors duration-200">
+            <div className="group bg-muted/40 hover:bg-muted/70 flex cursor-default items-center gap-3 rounded-xl p-3 transition-colors duration-200">
               <div className="bg-primary/10 group-hover:bg-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110">
                 <User className="text-primary/60 group-hover:text-primary h-5 w-5 transition-colors duration-200" />
               </div>
@@ -183,7 +183,7 @@ function EmployeeIdPage() {
             </div>
 
             {/* อีเมล */}
-            <div className="group bg-muted/50 hover:bg-muted/80 flex cursor-default items-center gap-3 rounded-lg p-3 transition-colors duration-200">
+            <div className="group bg-muted/40 hover:bg-muted/70 flex cursor-default items-center gap-3 rounded-xl p-3 transition-colors duration-200">
               <div className="bg-chart-2/10 group-hover:bg-chart-2/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110">
                 <Mail className="text-chart-2/60 group-hover:text-chart-2 h-5 w-5 transition-colors duration-200" />
               </div>
@@ -199,7 +199,7 @@ function EmployeeIdPage() {
             </div>
 
             {/* เบอร์โทร */}
-            <div className="group bg-muted/50 hover:bg-muted/80 flex cursor-default items-center gap-3 rounded-lg p-3 transition-colors duration-200">
+            <div className="group bg-muted/40 hover:bg-muted/70 flex cursor-default items-center gap-3 rounded-xl p-3 transition-colors duration-200">
               <div className="bg-chart-4/10 group-hover:bg-chart-4/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110">
                 <Phone className="text-chart-4/60 group-hover:text-chart-4 h-5 w-5 transition-colors duration-200" />
               </div>
@@ -215,7 +215,7 @@ function EmployeeIdPage() {
             </div>
 
             {/* ตำแหน่ง */}
-            <div className="group bg-muted/50 hover:bg-muted/80 flex cursor-default items-center gap-3 rounded-lg p-3 transition-colors duration-200">
+            <div className="group bg-muted/40 hover:bg-muted/70 flex cursor-default items-center gap-3 rounded-xl p-3 transition-colors duration-200">
               <div className="bg-chart-5/10 group-hover:bg-chart-5/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110">
                 <UserRoundCog className="text-chart-5/60 group-hover:text-chart-5 h-5 w-5 transition-colors duration-200" />
               </div>
@@ -234,25 +234,31 @@ function EmployeeIdPage() {
       </div>
 
       {/* === เลือกช่วงวัน + แดชบอร์ด === */}
-      <div className="bg-card rounded-lg border">
-        <div className="flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-bold">ภาพรวมและประวัติการเข้างาน</h2>
-            <p className="text-muted-foreground text-sm">
+      <div className="pt-8 space-y-8">
+        <div className="flex flex-col items-start gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-xl space-y-2">
+            <h2 className="flex items-center gap-3 text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              <div className="h-8 w-1.5 rounded-full bg-primary/80" />
+              ภาพรวมและประวัติการเข้างาน
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground/80 pl-4 sm:pl-5">
               แดชบอร์ดและรายการบันทึกการเข้า-ออกงาน
             </p>
           </div>
 
           {/* 📅 เลือกช่วงวันที่ */}
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-col items-start gap-4 sm:w-auto sm:flex-row sm:items-center">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="flex h-10 items-center gap-3 px-4"
+                  className="flex h-12 w-full sm:w-auto items-center justify-between gap-3 rounded-xl border-border/60 bg-background/50 px-5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-border hover:bg-accent/50 hover:shadow-md"
                 >
-                  <CalendarDays className="h-4 w-4" />
-                  <span className="text-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex rounded-xl bg-primary/10 p-2 text-primary">
+                      <CalendarDays className="h-5 w-5" />
+                    </div>
+                    <span className="text-[15px] font-semibold tracking-wide">
                     {dateRange?.from
                       ? dateRange.to
                         ? `${dateRange.from.toLocaleDateString('th-TH', {
@@ -269,7 +275,8 @@ function EmployeeIdPage() {
                             year: 'numeric',
                           })
                       : 'เลือกช่วงวันที่'}
-                  </span>
+                    </span>
+                  </div>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
@@ -295,16 +302,16 @@ function EmployeeIdPage() {
                     to: new Date(),
                   })
                 }
-                className="text-muted-foreground hover:text-foreground text-sm"
+                className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground px-2"
               >
-                ล้าง
+                รีเซ็ตเวลา
               </button>
             )}
           </div>
         </div>
 
         {/* 📊 แดชบอร์ด */}
-        <div className="p-4">
+        <div className="pt-2">
           <DashboardId
             employee={employee}
             records={dashboardRecords}

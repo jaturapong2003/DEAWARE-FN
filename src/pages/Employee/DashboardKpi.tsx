@@ -206,7 +206,7 @@ export function DashboardKpi() {
                     เป้าหมาย {'>'}90%
                   </span>
                 </div>
-                <div className="bg-muted/30 border-border/50 mt-2 h-2.5 w-full overflow-hidden rounded-full border">
+                <div className="bg-muted/30 border-border mt-2 h-2.5 w-full overflow-hidden rounded-full border dark:border-border">
                   <div
                     className={`h-full ${stats?.statusColor || 'bg-primary'} transition-all duration-1000`}
                     style={{ width: `${stats?.efficiency || 0}%` }}
@@ -216,7 +216,7 @@ export function DashboardKpi() {
             </div>
 
             {/* KPI #2: Incomplete Days */}
-            <div className="bg-card border-border/60 rounded-xl border p-6 shadow-sm">
+            <div className="bg-card border-border rounded-xl border p-6 shadow-sm dark:border-border">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-5 w-5 text-orange-500" />
@@ -266,7 +266,7 @@ export function DashboardKpi() {
           </div>
 
           {/* New DAILY TREND CHART */}
-          <div className="bg-card border-border/60 rounded-xl border p-6 shadow-sm">
+          <div className="bg-card border-border rounded-xl border p-6 shadow-sm dark:border-border">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-bold">

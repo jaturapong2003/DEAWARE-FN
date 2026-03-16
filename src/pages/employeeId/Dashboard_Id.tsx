@@ -284,21 +284,37 @@ const StatCard: React.FC<{
   value: string | number;
   subValue?: string;
   color?: string;
-}> = ({ icon, label, value, subValue, color = 'text-primary' }) => (
-  <div className="bg-card group hover:border-primary/30 rounded-lg border p-4 transition-all duration-200 hover:shadow-sm">
+  className?: string;
+}> = ({
+  icon,
+  label,
+  value,
+  subValue,
+  color = 'text-primary',
+  className = '',
+}) => (
+  <div
+    className={`flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-5 shadow-sm transition-all duration-300 hover:bg-muted/30 hover:shadow-md dark:border-border dark:bg-card md:px-5 ${className}`}
+  >
     <div className="flex items-center gap-3">
       <div
-        className={`bg-opacity-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${color} bg-current/10`}
+        className={`bg-opacity-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-current/10 ${color}`}
       >
         {icon}
       </div>
-      <div>
-        <p className="text-muted-foreground text-xs font-medium">{label}</p>
-        <p className={`text-xl font-bold ${color}`}>{value}</p>
-        {subValue && (
-          <p className="text-muted-foreground text-[11px]">{subValue}</p>
-        )}
-      </div>
+      <p className="text-muted-foreground/80 text-xs font-bold tracking-wider uppercase">
+        {label}
+      </p>
+    </div>
+    <div className="mt-1 space-y-1">
+      <p className={`truncate text-xl font-bold tracking-tight lg:text-2xl ${color}`}>
+        {value}
+      </p>
+      {subValue && (
+        <p className="text-muted-foreground max-w-[140px] text-xs font-medium text-pretty">
+          {subValue}
+        </p>
+      )}
     </div>
   </div>
 );
@@ -482,23 +498,42 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-card rounded-lg border p-5">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-lg">
-            <BarChart3 className="text-primary h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold">แดชบอร์ด</h2>
-            <p className="text-muted-foreground text-sm">
-              ภาพรวมการเข้างานของ {employee.display_name}
-            </p>
-          </div>
+      {/* 🌟 Profile Identity Header */}
+      <div className="flex items-center gap-4 border-b border-border pb-5">
+        {employee.url_image ? (
+          <img
+            src={employee.url_image}
+            alt={employee.display_name}
+            className="ring-primary/10 bg-muted h-20 w-20 rounded-full object-cover ring-2"
+            onError={(e) => {
+              // Hide broken image gracefully
+              e.currentTarget.style.display = 'none';
+              if (e.currentTarget.nextElementSibling) {
+                e.currentTarget.nextElementSibling.classList.remove('hidden');
+              }
+            }}
+          />
+        ) : null}
+        <div
+          className={`bg-primary/10 text-primary ring-primary/5 flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold ring-2 ${employee.url_image ? 'hidden' : ''}`}
+        >
+          {employee.display_name.charAt(0)}
+        </div>
+        <div className="space-y-1">
+          <p className="text-primary text-xs font-semibold tracking-wider uppercase">
+            พนักงาน
+          </p>
+          <h2 className="text-foreground text-2xl font-bold tracking-tight">
+            {employee.display_name}
+          </h2>
+          <p className="text-muted-foreground text-sm font-medium">
+            {employee.position || 'พนักงาน'}
+          </p>
         </div>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+      {/* 📊 Stat Cards */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
           icon={<LogIn className="h-5 w-5" />}
           label="บันทึกทั้งหมด"
@@ -552,13 +587,22 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
         />
       </div>
 
-      {/* Charts Row */}
+      {/* 📊 Charts Section */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Bar Chart */}
-        <div className="bg-card rounded-lg border p-5 lg:col-span-2">
-          <div className="mb-4 flex items-center gap-2">
-            <TrendingUp className="text-primary h-5 w-5" />
-            <h3 className="font-semibold">สถิติทำงานครบ 9 ชม.</h3>
+        <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-border lg:col-span-2">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-xl">
+              <TrendingUp className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold tracking-tight">
+                สถิติทำงานครบ 9 ชม.
+              </h3>
+              <p className="text-muted-foreground mt-0.5 text-xs font-medium tracking-wider uppercase">
+                ชั่วโมงการทำงานรายวัน
+              </p>
+            </div>
           </div>
 
           {barData.length > 0 ? (
@@ -639,11 +683,20 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
         </div>
 
         {/* Pie / Donut Chart */}
-        <div className="bg-card rounded-lg border p-5">
-          <div className="mb-4 flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <Users className="text-primary h-5 w-5" />
-              <h3 className="font-semibold">สถิติรายเดือน</h3>
+        <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-border">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-xl">
+                <Users className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold tracking-tight">
+                  สถิติรายเดือน
+                </h3>
+                <p className="text-muted-foreground mt-0.5 text-xs font-medium tracking-wider uppercase">
+                  ภาพรวมตลอดเดือน
+                </p>
+              </div>
             </div>
 
             {/* Month Statistics */}
@@ -768,18 +821,22 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
         );
 
         return (
-          <div className="bg-card rounded-lg border">
-            <div className="border-b p-5">
-              <div className="flex items-center gap-2">
-                <Clock className="text-primary h-5 w-5" />
-                <h3 className="font-semibold">ชั่วโมงทำงานรายวัน</h3>
-                <Badge variant="outline" className="ml-auto">
+          <div className="pt-6">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-xl">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold tracking-tight">
+                  รายละเอียดรายวัน
+                </h3>
+                <p className="text-muted-foreground mt-0.5 text-xs font-medium tracking-wider uppercase">
                   เกณฑ์ {FULL_HOURS} ชม.
-                </Badge>
+                </p>
               </div>
             </div>
 
-            <div className="divide-y">
+            <div className="grid gap-4">
               {groupedList.length > 0 ? (
                 paginatedList.map(([label, data]) => {
                   const expectedForGroup = data.count * FULL_HOURS;
@@ -797,7 +854,7 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
                       <DialogTrigger asChild>
                         <button
                           type="button"
-                          className="hover:bg-muted/30 w-full cursor-pointer px-5 py-4 text-left transition-colors"
+                          className="w-full cursor-pointer rounded-2xl border border-border bg-card p-5 text-left shadow-sm transition-all hover:border-primary/50 hover:bg-muted/30 hover:shadow-md dark:border-border"
                         >
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                             {/* วันที่ */}
@@ -1104,7 +1161,7 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
 
             {/* Pagination */}
             {groupedList.length > 0 && totalDailyPages > 0 && (
-              <div className="flex items-center justify-center border-t p-4">
+              <div className="mt-10 flex items-center justify-center">
                 <PaginationControll
                   page={dailyPage}
                   totalPages={totalDailyPages}

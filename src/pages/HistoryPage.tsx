@@ -77,31 +77,32 @@ const HistoryPage: React.FC = () => {
   return (
     <div className="space-y-4 px-2 sm:px-0">
       {/* Header */}
-      <div className="bg-card rounded-lg border p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-xl font-bold sm:text-2xl">ประวัติการเข้างาน</h2>
-            <p className="text-muted-foreground text-sm">
-              ทั้งหมด {total} รายการ
-            </p>
-          </div>
-          <Button
-            onClick={() => refetch()}
-            disabled={isRefetching}
-            variant="outline"
-            size="sm"
-          >
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`}
-            />
-            รีเฟรช
-          </Button>
+      <div className="flex flex-col items-start gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-2">
+          <h2 className="flex items-center gap-3 text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            <div className="h-8 w-1.5 rounded-full bg-primary/80" />
+            ประวัติการเข้างาน
+          </h2>
+          <p className="text-base sm:text-lg text-muted-foreground/80 pl-4 sm:pl-5">
+            ทั้งหมด {total} รายการ
+          </p>
         </div>
+        <Button
+          onClick={() => refetch()}
+          disabled={isRefetching}
+          variant="outline"
+          className="flex h-10 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border-border/60 bg-background/50 px-4 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-border hover:bg-accent/50 hover:shadow-md"
+        >
+          <RefreshCw
+            className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`}
+          />
+          <span className="font-semibold">รีเฟรช</span>
+        </Button>
       </div>
 
       {/* รายการประวัติ */}
       {records.length === 0 ? (
-        <div className="bg-card rounded-lg border p-8 text-center sm:p-12">
+        <div className="bg-card rounded-xl border border-border p-8 text-center shadow-sm dark:border-border sm:p-12">
           <Clock className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
           <p className="text-muted-foreground text-sm sm:text-base">
             ยังไม่มีประวัติการเข้างาน
@@ -112,10 +113,10 @@ const HistoryPage: React.FC = () => {
           {records.map((record: AttendanceRecord) => (
             <div
               key={record.id}
-              className="bg-card rounded-lg border p-4 transition-shadow hover:shadow-md sm:p-5"
+              className="bg-card rounded-xl border border-border p-4 shadow-sm transition-all hover:shadow-md dark:border-border sm:p-5"
             >
               {/* วันที่ */}
-              <div className="mb-3 flex items-center gap-2 border-b pb-2">
+              <div className="mb-3 flex items-center gap-2 border-b border-border pb-2 dark:border-border">
                 <Clock className="text-primary h-4 w-4" />
                 <span className="text-sm font-semibold sm:text-base">
                   {formatDate(record.check_in)}

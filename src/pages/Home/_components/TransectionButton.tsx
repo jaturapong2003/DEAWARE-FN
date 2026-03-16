@@ -48,10 +48,10 @@ const TransectionButton: React.FC<TransectionButtonProps> = ({
   };
 
   return (
-    <div className="bg-card group rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
+    <div className="bg-card group rounded-xl border border-border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="from-primary/80 to-foreground bg-linear-to-r bg-clip-text text-lg font-semibold text-transparent">
+          <h3 className="text-lg font-semibold text-foreground">
             บันทึกเวลา
           </h3>
           <p className="text-muted-foreground text-xs">Time Attendance</p>
@@ -76,7 +76,7 @@ const TransectionButton: React.FC<TransectionButtonProps> = ({
 
       <div className="mb-4 grid grid-cols-2 gap-3">
         {/* Check In Card */}
-        <div className="from-chart-1/5 border-border/50 group/item hover:border-chart-1/30 rounded-md border bg-linear-to-br to-transparent p-3 text-center transition-colors">
+        <div className="from-chart-1/5 border-border group/item hover:border-chart-1/40 rounded-xl border bg-linear-to-br to-transparent p-3 text-center transition-colors">
           <div className="text-muted-foreground flex items-center justify-center gap-1 text-sm font-semibold">
             <LogIn className="h-3 w-3" />
             <span>เข้า</span>
@@ -91,7 +91,7 @@ const TransectionButton: React.FC<TransectionButtonProps> = ({
         </div>
 
         {/* Check Out Card */}
-        <div className="from-destructive/5 border-border/50 group/item hover:border-destructive/30 rounded-md border bg-linear-to-br to-transparent p-3 text-center transition-colors">
+        <div className="from-destructive/5 border-border group/item hover:border-destructive/40 rounded-xl border bg-linear-to-br to-transparent p-3 text-center transition-colors">
           <div className="text-muted-foreground flex items-center justify-center gap-1 text-sm font-semibold">
             <LogOut className="h-3 w-3" />
             <span>ออก</span>

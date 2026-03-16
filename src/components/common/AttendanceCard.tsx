@@ -64,8 +64,8 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
   const isActive = !record.check_out;
 
   return (
-    <div className="bg-card group hover:border-primary/50 overflow-hidden rounded-lg border transition-all duration-200 hover:shadow-md">
-      <div className="bg-muted/50 border-b px-4 py-3">
+    <div className="bg-card group hover:border-primary/40 overflow-hidden rounded-xl border border-border shadow-sm transition-all duration-200 hover:shadow-md">
+      <div className="border-b border-border bg-muted/30 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calendar className="text-muted-foreground h-4 w-4" />
@@ -250,7 +250,7 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
         </div>
 
         {/* ชั่วโมงทำงาน */}
-        <div className="mt-4 border-t pt-4">
+        <div className="mt-4 border-t border-border pt-4">
           <div className="from-primary/10 to-primary/5 border-primary/20 flex items-center justify-between rounded-lg border bg-linear-to-r px-4 py-3">
             <div className="flex items-center gap-2">
               <Clock className="text-primary h-5 w-5" />

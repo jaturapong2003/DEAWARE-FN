@@ -43,8 +43,22 @@ export default function KpiDashboardPage() {
   );
 
   // --- MOCK DATA LOGIC ---
-  const getMockData = (currentRange: string) => {
-    const dataMap: Record<string, any> = {
+  interface KpiMockData {
+    summary: {
+      overall_efficiency: number;
+      growth_rate: number;
+      is_growth_up: boolean;
+      side_metrics: {
+        monthly_efficiency: number;
+        consistency_days: number;
+        late_entry_count: number;
+      };
+    };
+    line_chart: { label: string; value: number }[];
+  }
+
+  const getMockData = (currentRange: string): KpiMockData => {
+    const dataMap: Record<string, KpiMockData> = {
       '1M': {
         summary: {
           overall_efficiency: 81,
@@ -138,7 +152,7 @@ export default function KpiDashboardPage() {
   return (
     <div className="container mx-auto max-w-6xl space-y-10 p-6 pb-20">
       {/* Header section */}
-      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-6 border-b border-border pb-5 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -148,11 +162,12 @@ export default function KpiDashboardPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">
+          <div className="space-y-1">
+            <h1 className="flex items-center gap-3 text-2xl font-bold tracking-tight">
+              <div className="h-8 w-1.5 rounded-full bg-primary/80" />
               รายงานวิเคราะห์ประสิทธิภาพ
             </h1>
-            <p className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
+            <p className="text-muted-foreground mt-1 flex items-center gap-2 pl-4 sm:pl-5 text-sm">
               <TrendingUp className="text-primary h-4 w-4" />
               สรุปข้อมูลภาพรวมตามช่วงวันที่เลือก
             </p>
