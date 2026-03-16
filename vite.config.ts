@@ -14,15 +14,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/': {
-        target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:3001',
-        // target: 'http://localhost:3000',
+      target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:3001',
         changeOrigin: true,
-        secure: false,
+        secure: false, 
       },
       '/auth/': {
-        // target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:8081',
-        // target: 'http://localhost:3000',
-        target: 'http://172.20.10.14:8081',
+        target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:8081/',
         changeOrigin: true,
         secure: false,
       },

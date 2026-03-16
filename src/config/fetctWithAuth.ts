@@ -11,12 +11,14 @@ export async function fetchWithAuth<T>(
   // refresh token if expiring in 30s
   await keycloak.updateToken(30);
 
+  const isFormData = options.body instanceof FormData;
+
   const response = await fetch(url, {
     ...options,
     headers: {
       ...options.headers,
       Authorization: `Bearer ${keycloak.token}`,
-      'Content-Type': 'application/json',
+      ...(!isFormData && { 'Content-Type': 'application/json' }),
     },
   });
 
