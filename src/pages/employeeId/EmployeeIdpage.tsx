@@ -43,6 +43,7 @@ import { Field, FieldGroup } from '@/components/ui/field';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import toast from 'react-hot-toast';
+import { Textarea } from '@/components/ui/textarea';
 
 // Types for email
 interface SendEmailRequest {
@@ -135,7 +136,7 @@ function EmaillDialog({ employeeId }: { employeeId: string }) {
             </Field>
             <Field>
               <Label>รายละเอียด</Label>
-              <Input
+              <Textarea
                 placeholder="กรอกรายละเอียดที่นี่"
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}

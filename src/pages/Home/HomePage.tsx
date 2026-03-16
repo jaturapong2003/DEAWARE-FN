@@ -52,7 +52,7 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 px-2 sm:space-y-6 sm:px-0">
+    <div className="space-y-2">
       <ProfileCard {...profileData} />
       <TransectionButton
         checkInTime={checkInTime}

@@ -1,6 +1,13 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { LogIn, LogOut, Loader2, Clock } from 'lucide-react';
 import { formatTime } from '@/lib/date';
 import { useAttendance } from '@/hooks/useAttendance';
@@ -56,13 +63,13 @@ const TransectionButton: React.FC<TransectionButtonProps> = ({
         : LogIn;
 
   return (
-    <div className="bg-card rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
-      <div className="mb-4 flex items-center justify-between">
+    <Card className="gap-4 p-4 sm:p-6">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-0">
         <div>
-          <h3 className="from-primary/80 to-foreground bg-linear-to-r bg-clip-text text-lg font-semibold text-transparent">
+          <CardTitle className="from-primary/80 to-foreground bg-linear-to-r bg-clip-text text-lg font-semibold text-transparent">
             บันทึกเวลา
-          </h3>
-          <p className="text-muted-foreground text-xs">Time Attendance</p>
+          </CardTitle>
+          <CardDescription className="text-xs">Time Attendance</CardDescription>
         </div>
         <Badge
           variant="secondary"
@@ -70,63 +77,65 @@ const TransectionButton: React.FC<TransectionButtonProps> = ({
         >
           {isCheckedIn ? 'กำลังทำงาน' : 'ยังไม่เข้างาน'}
         </Badge>
-      </div>
+      </CardHeader>
 
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <div className="from-chart-1/5 border-border/50 group hover:border-chart-1/30 rounded-md border bg-linear-to-br to-transparent p-3 text-center transition-colors">
-          <div className="text-muted-foreground flex items-center justify-center gap-1 text-sm font-semibold">
-            <LogIn className="h-3 w-3" />
-            <span>เข้า</span>
+      <CardContent className="space-y-4 p-0">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="from-chart-1/5 border-border/50 group hover:border-chart-1/30 rounded-md border bg-linear-to-br to-transparent p-3 text-center transition-colors">
+            <div className="text-muted-foreground flex items-center justify-center gap-1 text-sm font-semibold">
+              <LogIn className="h-3 w-3" />
+              <span>เข้า</span>
+            </div>
+            <div
+              className={`mt-1 text-2xl font-bold tabular-nums transition-colors ${
+                checkInTime
+                  ? 'text-chart-1 group-hover:text-chart-1'
+                  : 'text-muted-foreground/30'
+              }`}
+            >
+              {formatTime(checkInTime)}
+            </div>
           </div>
-          <div
-            className={`mt-1 text-2xl font-bold tabular-nums transition-colors ${
-              checkInTime
-                ? 'text-chart-1 group-hover:text-chart-1'
-                : 'text-muted-foreground/30'
-            }`}
-          >
-            {formatTime(checkInTime)}
+
+          <div className="from-destructive/5 border-border/50 group hover:border-destructive/30 rounded-md border bg-linear-to-br to-transparent p-3 text-center transition-colors">
+            <div className="text-muted-foreground flex items-center justify-center gap-1 text-sm font-semibold">
+              <LogOut className="h-3 w-3" />
+              <span>ออก</span>
+            </div>
+            <div
+              className={`mt-1 text-2xl font-bold tabular-nums transition-colors ${
+                checkOutTime
+                  ? 'text-destructive group-hover:text-destructive'
+                  : 'text-muted-foreground/30'
+              }`}
+            >
+              {formatTime(checkOutTime)}
+            </div>
           </div>
         </div>
 
-        <div className="from-destructive/5 border-border/50 group hover:border-destructive/30 rounded-md border bg-linear-to-br to-transparent p-3 text-center transition-colors">
-          <div className="text-muted-foreground flex items-center justify-center gap-1 text-sm font-semibold">
-            <LogOut className="h-3 w-3" />
-            <span>ออก</span>
-          </div>
-          <div
-            className={`mt-1 text-2xl font-bold tabular-nums transition-colors ${
-              checkOutTime
-                ? 'text-destructive group-hover:text-destructive'
-                : 'text-muted-foreground/30'
-            }`}
-          >
-            {formatTime(checkOutTime)}
-          </div>
-        </div>
-      </div>
-
-      <Button
-        onClick={handleClick}
-        disabled={loading || isCooldown}
-        variant={isCheckedIn ? 'destructive' : 'default'}
-        size="lg"
-        className={`w-full gap-2 font-medium cursor-pointer transition-all ${
-          loading
-            ? 'cursor-wait'
-            : isCooldown
-              ? 'bg-muted hover:bg-muted text-muted-foreground cursor-wait'
-              : isCheckedIn
-                ? 'from-destructive to-destructive/90 hover:shadow-destructive/20 bg-linear-to-r hover:shadow-lg'
-                : 'from-primary to-primary/90 hover:shadow-primary/20 bg-linear-to-r hover:shadow-lg'
-        }`}
-        aria-pressed={isCheckedIn}
-        aria-label={actionLabel}
-      >
-        <ActionIcon className={`${loading ? 'animate-spin' : ''} h-5 w-5`} />
-        <span className="text-base">{actionLabel}</span>
-      </Button>
-    </div>
+        <Button
+          onClick={handleClick}
+          disabled={loading || isCooldown}
+          variant={isCheckedIn ? 'destructive' : 'default'}
+          size="lg"
+          className={`w-full cursor-pointer gap-2 font-medium transition-all ${
+            loading
+              ? 'cursor-wait'
+              : isCooldown
+                ? 'bg-muted hover:bg-muted text-muted-foreground cursor-wait'
+                : isCheckedIn
+                  ? 'from-destructive to-destructive/90 hover:shadow-destructive/20 bg-linear-to-r hover:shadow-lg'
+                  : 'from-primary to-primary/90 hover:shadow-primary/20 bg-linear-to-r hover:shadow-lg'
+          }`}
+          aria-pressed={isCheckedIn}
+          aria-label={actionLabel}
+        >
+          <ActionIcon className={`${loading ? 'animate-spin' : ''} h-5 w-5`} />
+          <span className="text-base">{actionLabel}</span>
+        </Button>
+      </CardContent>
+    </Card>
   );
 };
 
