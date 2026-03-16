@@ -294,7 +294,7 @@ const StatCard: React.FC<{
   className = '',
 }) => (
   <div
-    className={`flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-5 shadow-sm transition-all duration-300 hover:bg-muted/30 hover:shadow-md dark:border-border dark:bg-card md:px-5 ${className}`}
+    className={`border-border bg-card hover:bg-muted/30 dark:border-border dark:bg-card flex flex-col gap-3 rounded-2xl border px-4 py-5 shadow-sm transition-all duration-300 hover:shadow-md md:px-5 ${className}`}
   >
     <div className="flex items-center gap-3">
       <div
@@ -307,7 +307,9 @@ const StatCard: React.FC<{
       </p>
     </div>
     <div className="mt-1 space-y-1">
-      <p className={`truncate text-xl font-bold tracking-tight lg:text-2xl ${color}`}>
+      <p
+        className={`truncate text-xl font-bold tracking-tight lg:text-2xl ${color}`}
+      >
         {value}
       </p>
       {subValue && (
@@ -499,23 +501,41 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
   return (
     <div className="space-y-6">
       {/* 🌟 Profile Identity Header */}
-      <div className="flex items-center gap-4 border-b border-border pb-5">
+      <div className="border-border flex items-center gap-4 border-b pb-5">
         {employee.url_image ? (
-          <img
-            src={employee.url_image}
-            alt={employee.display_name}
-            className="ring-primary/10 bg-muted h-20 w-20 rounded-full object-cover ring-2"
-            onError={(e) => {
-              // Hide broken image gracefully
-              e.currentTarget.style.display = 'none';
-              if (e.currentTarget.nextElementSibling) {
-                e.currentTarget.nextElementSibling.classList.remove('hidden');
-              }
-            }}
-          />
+          <div className="dialog-wrapper">
+            <Dialog>
+              <DialogTrigger asChild>
+                <img
+                  src={employee.url_image}
+                  alt={employee.display_name}
+                  className="ring-primary/10 bg-muted ml-4 h-20 w-20 cursor-pointer rounded-full object-cover ring-2 transition-transform hover:scale-105"
+                  onError={(e) => {
+                    // Hide broken image gracefully
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.closest('.dialog-wrapper');
+                    if (parent && parent.nextElementSibling) {
+                      parent.nextElementSibling.classList.remove('hidden');
+                    }
+                  }}
+                />
+              </DialogTrigger>
+              <DialogContent className="max-w-md border-none bg-transparent p-0 shadow-none">
+                <DialogTitle className="sr-only">รูปโปรไฟล์เต็ม</DialogTitle>
+                <DialogDescription className="sr-only">
+                  รูปโปรไฟล์ขนาดเต็มของพนักงาน
+                </DialogDescription>
+                <img
+                  src={employee.url_image}
+                  alt={employee.display_name}
+                  className="h-auto w-full object-contain drop-shadow-2xl"
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         ) : null}
         <div
-          className={`bg-primary/10 text-primary ring-primary/5 flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold ring-2 ${employee.url_image ? 'hidden' : ''}`}
+          className={`bg-primary/10 text-primary ring-primary/5 ml-4 flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold ring-2 ${employee.url_image ? 'hidden' : ''}`}
         >
           {employee.display_name.charAt(0)}
         </div>
@@ -590,7 +610,7 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
       {/* 📊 Charts Section */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Bar Chart */}
-        <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-border lg:col-span-2">
+        <div className="border-border bg-card dark:border-border space-y-6 rounded-2xl border p-6 shadow-sm lg:col-span-2">
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-xl">
               <TrendingUp className="h-5 w-5" />
@@ -683,7 +703,7 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
         </div>
 
         {/* Pie / Donut Chart */}
-        <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-border">
+        <div className="border-border bg-card dark:border-border space-y-6 rounded-2xl border p-6 shadow-sm">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-xl">
@@ -854,7 +874,7 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
                       <DialogTrigger asChild>
                         <button
                           type="button"
-                          className="w-full cursor-pointer rounded-2xl border border-border bg-card p-5 text-left shadow-sm transition-all hover:border-primary/50 hover:bg-muted/30 hover:shadow-md dark:border-border"
+                          className="border-border bg-card hover:border-primary/50 hover:bg-muted/30 dark:border-border w-full cursor-pointer rounded-2xl border p-5 text-left shadow-sm transition-all hover:shadow-md"
                         >
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                             {/* วันที่ */}

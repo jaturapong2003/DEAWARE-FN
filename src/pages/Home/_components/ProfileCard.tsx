@@ -10,6 +10,13 @@ import {
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Mail, User, Building2, Phone, Clock, ScanFace } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { formatTime, formatDate } from '@/lib/date';
 import { getInitials } from '@/lib/helper';
 
@@ -76,17 +83,35 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-8">
           {/* ส่วนรูปโปรไฟล์ */}
           <div className="flex min-w-50 flex-col items-center justify-center">
-            <div className="group relative">
-              {/* Outer Glow Effect */}
-              <div className="from-primary via-accent to-primary/50 absolute -inset-1 rounded-full bg-linear-to-r opacity-20 blur-md transition-opacity duration-300 group-hover:opacity-40"></div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <div className="group relative cursor-pointer">
+                  {/* Outer Glow Effect */}
+                  <div className="from-primary via-accent to-primary/50 absolute -inset-1 rounded-full bg-linear-to-r opacity-20 blur-md transition-opacity duration-300 group-hover:opacity-40"></div>
 
-              <Avatar className="border-primary/30 ring-primary/10 relative h-24 w-24 border-4 shadow-lg ring-2 transition-transform duration-300 group-hover:scale-[1.02] sm:h-32 sm:w-32">
-                <AvatarImage src={urlImage || undefined} alt={displayName} />
-                <AvatarFallback className="from-primary to-primary/80 text-primary-foreground bg-linear-to-br text-2xl font-bold shadow-inner sm:text-4xl">
-                  {getInitials(displayName || userName)}
-                </AvatarFallback>
-              </Avatar>
-            </div>
+                  <Avatar className="border-primary/30 ring-primary/10 relative h-24 w-24 border-4 shadow-lg ring-2 transition-transform duration-300 group-hover:scale-[1.02] sm:h-32 sm:w-32">
+                    <AvatarImage
+                      src={urlImage || undefined}
+                      alt={displayName}
+                    />
+                    <AvatarFallback className="from-primary to-primary/80 text-primary-foreground bg-linear-to-br text-2xl font-bold shadow-inner sm:text-4xl">
+                      {getInitials(displayName || userName)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </DialogTrigger>
+              <DialogContent className="max-w-md border-none bg-transparent p-0 shadow-none">
+                <DialogTitle className="sr-only">รูปโปรไฟล์เต็ม</DialogTitle>
+                <DialogDescription className="sr-only">
+                  รูปโปรไฟล์ขนาดเต็มของพนักงาน
+                </DialogDescription>
+                <img
+                  src={urlImage || undefined}
+                  alt={displayName}
+                  className="h-auto w-full object-contain drop-shadow-2xl"
+                />
+              </DialogContent>
+            </Dialog>
 
             <h3 className="text-foreground mt-4 text-center text-base font-semibold sm:text-lg">
               {displayName}

@@ -30,7 +30,7 @@ const AppSidebar: React.FC = () => {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-sidebar-border from-primary/5 via-sidebar to-sidebar border-b bg-gradient-to-b">
+      <SidebarHeader className="border-sidebar-border from-primary/5 via-sidebar to-sidebar border-b bg-linear-to-b">
         <div className="flex items-center justify-center py-3.25 group-data-[collapsible=icon]:hidden">
           <div className="relative">
             <div className="from-primary/10 via-accent/10 to-primary/10 absolute -inset-2 rounded-lg bg-linear-to-r opacity-50 blur-sm"></div>
