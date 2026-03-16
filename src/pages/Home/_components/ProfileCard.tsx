@@ -75,7 +75,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         {/* Mobile: ซ้อนแนวตั้ง, Desktop: แนวนอน */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-8">
           {/* ส่วนรูปโปรไฟล์ */}
-          <div className="flex min-w-[200px] flex-col items-center justify-center">
+          <div className="flex min-w-50 flex-col items-center justify-center">
             <div className="group relative">
               {/* Outer Glow Effect */}
               <div className="from-primary via-accent to-primary/50 absolute -inset-1 rounded-full bg-linear-to-r opacity-20 blur-md transition-opacity duration-300 group-hover:opacity-40"></div>

@@ -26,7 +26,7 @@ const HomePage: React.FC = () => {
       displayName: profile?.display_name || profile?.user_name || 'ไม่ระบุชื่อ',
       email: profile?.email || '-',
       urlImage: profile?.url_image || '',
-      userName: profile?.user_name || '-',
+      userName: profile?.username || '-',
       phoneNumber: profile?.phone_number,
       position: profile?.position,
       faceEmbeddingCount: profile?.face_embedding_count,

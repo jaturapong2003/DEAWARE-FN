@@ -171,7 +171,7 @@ const AppSidebar: React.FC = () => {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
+              <SidebarMenuItem>          
                 <Dialog>
                   <DialogTrigger asChild>
                     <SidebarMenuButton tooltip="Settings">
