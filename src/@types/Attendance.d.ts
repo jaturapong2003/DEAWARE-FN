@@ -38,3 +38,22 @@ export interface AttendanceSingleResponse {
   check_in_confidence: number;
   check_out_confidence: number;
 }
+// สำหรับการตอบกลับจากการวิเคราะห์ข้อมูลเข้างานของพนักงานรายบุคคล
+export interface EmployeeAnalysisResponse {
+  data: {
+    summary: {
+      total_work_minutes: number;
+      success_days_count: number;
+      partial_days_count: number;
+      total_excess_minutes: number;
+      avg_hours_per_day: number;
+      performance_grade: string;
+    };
+    chart_data: {
+      date: string;
+      hours: number;
+      status: boolean;
+    }[];
+  };
+  ok: boolean;
+}

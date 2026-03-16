@@ -19,40 +19,39 @@ export const useProfile = () => {
 
   // Load Keycloak profile once from tokenParsed
   useEffect(() => {
-    if (
-      !keycloak.authenticated ||
-      profileLoadedRef.current ||
-      profile?.username
-    )
-      return;
+    if (!keycloak.authenticated) return;
 
     const tp = keycloak.tokenParsed as Record<string, unknown> | undefined;
-    if (tp) {
-      const profileFromToken: KeycloakProfile = {
-        id: typeof tp.sub === 'string' ? tp.sub : undefined,
-        username:
-          typeof tp.preferred_username === 'string'
-            ? tp.preferred_username
-            : undefined,
-        email: typeof tp.email === 'string' ? tp.email : undefined,
-        firstName:
-          typeof tp.given_name === 'string' ? tp.given_name : undefined,
-        lastName:
-          typeof tp.family_name === 'string' ? tp.family_name : undefined,
-      };
-      setKeycloakProfile(profileFromToken);
-      profileLoadedRef.current = true;
-    }
-  }, [keycloak, profile?.username, setKeycloakProfile]);
+    if (!tp) return;
+
+    // ถ้าโหลดไปแล้ว และ ID ตรงกับใน Store ไม่ต้องทำซ้ำ
+    if (profileLoadedRef.current && profile?.id === tp.sub) return;
+
+    const profileFromToken: KeycloakProfile = {
+      id: typeof tp.sub === 'string' ? tp.sub : undefined,
+      username:
+        typeof tp.preferred_username === 'string'
+          ? tp.preferred_username
+          : undefined,
+      email: typeof tp.email === 'string' ? tp.email : undefined,
+      firstName:
+        typeof tp.given_name === 'string' ? tp.given_name : undefined,
+      lastName:
+        typeof tp.family_name === 'string' ? tp.family_name : undefined,
+    };
+
+    setKeycloakProfile(profileFromToken);
+    profileLoadedRef.current = true;
+  }, [keycloak.authenticated, keycloak.tokenParsed, profile?.id, setKeycloakProfile]);
 
   // Query employee data with auto-update store
   const { data, isLoading, error, refetch } = useQuery<AccountInfo>({
-    queryKey: ['employee', 'me'],
+    queryKey: ['employee', 'me', profile?.id],
     queryFn: async () => {
       const response = await apiClient.get<AccountInfo>('/employee/me');
       return response.data;
     },
-    enabled: keycloak.authenticated,
+    enabled: keycloak.authenticated && !!profile?.id,
     retry: false,
     staleTime: 1000 * 60 * 5,
     select: (data) => {
@@ -71,3 +70,5 @@ export const useProfile = () => {
     checkOutTime: data?.check_out ?? null,
   };
 };
+
+export default useProfile;

@@ -9,9 +9,11 @@ type User = Partial<AccountInfo> & Partial<KeycloakProfile>;
 
 interface AuthState {
   user: User | null;
+  loggingOut: boolean;
   setKeycloakProfile: (profile: KeycloakProfile) => void;
   setAccountInfo: (info: AccountInfo) => void;
   clearUser: () => void;
+  setLoggingOut: (val: boolean) => void;
 }
 
 // สร้าง Zustand Store พร้อม devtools, persist, และ immer
@@ -20,6 +22,7 @@ export const useAuthStore = create<AuthState>()(
     persist(
       immer((set) => ({
         user: null,
+        loggingOut: false,
 
         // ตั้งค่าข้อมูลจาก Keycloak profile
         setKeycloakProfile: (profile: KeycloakProfile) => {
@@ -53,10 +56,16 @@ export const useAuthStore = create<AuthState>()(
             draft.user = null;
           });
         },
+
+        setLoggingOut: (val: boolean) => {
+          set((draft) => {
+            draft.loggingOut = val;
+          });
+        },
       })),
       {
         name: 'auth-storage', // ชื่อ key ใน localStorage
-        partialize: (state) => ({ user: state.user }), // บันทึกเฉพาะ user
+        partialize: (state) => ({ user: state.user, loggingOut: state.loggingOut }), // บันทึก user และสถานะ loggingOut
       }
     ),
     { name: 'AuthStore' } // ชื่อใน Redux DevTools

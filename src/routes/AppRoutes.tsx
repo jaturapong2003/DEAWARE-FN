@@ -2,6 +2,8 @@ import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import MainLayout from '../components/layouts/MainLayout';
 import LoadingPage from '../components/common/LoadingPage';
+import { useKeycloak } from '@react-keycloak/web';
+import useAuthStore from '@/stores/authStore';
 
 // Lazy load pages
 const HomePage = lazy(() => import('../pages/Home/HomePage'));
@@ -17,6 +19,29 @@ const KpiDashboardPage = lazy(
 );
 
 const AppRoutes: React.FC = () => {
+  const { keycloak, initialized } = useKeycloak();
+  const { loggingOut, setLoggingOut } = useAuthStore();
+
+  // รีเซ็ตสถานะ loggingOut เมื่อกลับเข้าสู่ระบบสำเร็จ (ป้องกันค้าง)
+  React.useEffect(() => {
+    if (initialized && keycloak.authenticated && loggingOut) {
+      setLoggingOut(false);
+    }
+  }, [initialized, keycloak.authenticated, loggingOut, setLoggingOut]);
+
+  if (loggingOut) {
+    return <LoadingPage />;
+  }
+
+  // ดักเอาไว้ตั้งแต่ต้นทาง: ถ้าแอปยังโหลดระบบยืนยันตัวตนไม่เสร็จ ห้ามแสดง UI เด็ดขาด
+  if (!initialized) {
+    return <LoadingPage message="กำลังเตรียมระบบ..." />;
+  }
+
+  if (initialized && !keycloak.authenticated) {
+    return null;
+  }
+
   return (
     <BrowserRouter>
       <MainLayout>
