@@ -34,10 +34,7 @@ export const useAuthStore = create<AuthState>()(
               email: profile.email,
               firstName: profile.firstName,
               lastName: profile.lastName,
-              user_name: profile.username,
-              display_name:
-                `${profile.firstName || ''} ${profile.lastName || ''}`.trim() ||
-                profile.username,
+              display_name: `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || profile.username,
             });
           });
         },

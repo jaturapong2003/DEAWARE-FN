@@ -18,6 +18,7 @@ const KpiDashboardPage = lazy(
   () => import('@/pages/Employee/KpiDashboardPage')
 );
 
+
 const AppRoutes: React.FC = () => {
   const { keycloak, initialized } = useKeycloak();
   const { loggingOut, setLoggingOut } = useAuthStore();

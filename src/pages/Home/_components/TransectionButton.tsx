@@ -6,6 +6,7 @@ import { formatTime } from '@/lib/date';
 import { useAttendance } from '@/hooks/useAttendance';
 import toast from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { CardDescription, CardTitle } from '@/components/ui/card';
 
 interface TransectionButtonProps {
   checkInTime: string | null;
@@ -51,10 +52,10 @@ const TransectionButton: React.FC<TransectionButtonProps> = ({
     <div className="bg-card group rounded-xl border border-border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">
+          <CardTitle className="from-primary/80 to-foreground bg-linear-to-r bg-clip-text text-lg font-semibold text-transparent">
             บันทึกเวลา
-          </h3>
-          <p className="text-muted-foreground text-xs">Time Attendance</p>
+          </CardTitle>
+          <CardDescription className="text-xs">Time Attendance</CardDescription>
         </div>
         <Badge
           variant="secondary"

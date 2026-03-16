@@ -580,8 +580,8 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
           value={fmtHours(avgWorkHours)}
           subValue={
             avgWorkHours >= FULL_HOURS
-              ? '✅ สูงกว่าเกณฑ์มาตรฐาน'
-              : `⚠️ ต่ำกว่าเกณฑ์ ${fmtHours(FULL_HOURS - avgWorkHours)}`
+              ? 'สูงกว่าเกณฑ์มาตรฐาน'
+              : `ต่ำกว่าเกณฑ์ ${fmtHours(FULL_HOURS - avgWorkHours)}`
           }
           color="text-blue-600"
         />

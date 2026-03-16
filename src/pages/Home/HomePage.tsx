@@ -23,7 +23,7 @@ const HomePage: React.FC = () => {
   // Memoize profile display values
   const profileData = useMemo(
     () => ({
-      displayName: profile?.display_name || profile?.user_name || '-',
+      displayName: profile?.display_name || profile?.user_name || 'ไม่ระบุชื่อ',
       email: profile?.email || '-',
       urlImage: profile?.url_image || '',
       userName: profile?.user_name || '-',
@@ -59,7 +59,7 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 px-2 sm:space-y-6 sm:px-0">
+    <div className="space-y-2">
       <ProfileCard {...profileData} />
       <TransectionButton
         checkInTime={checkInTime}

@@ -317,7 +317,7 @@ export function DashboardKpi() {
                       fontWeight: 'bold',
                     }}
                     cursor={{ stroke: '#e2e8f0', strokeWidth: 1 }}
-                    formatter={(value: number) => [`${value} ชม.`, 'เวลาทำงาน']}
+                    formatter={(value: number | undefined) => [`${value ?? 0} ชม.`, 'เวลาทำงาน']}
                     labelFormatter={(label) => `วันที่ ${label}`}
                   />
                   <ReferenceLine
