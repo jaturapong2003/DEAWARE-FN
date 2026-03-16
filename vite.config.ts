@@ -23,6 +23,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/files/': {
+        target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:8888/',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });
