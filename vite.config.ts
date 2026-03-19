@@ -14,17 +14,20 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/': {
-        target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:3001',
+        // target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:3001',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },
       '/auth/': {
-        target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:8081/',
+        // target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:8081/',
+        target: 'http://localhost:8080/',
         changeOrigin: true,
         secure: false,
       },
       '/files/': {
-        target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:8889/',
+        // target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:8889/',
+        target: 'http://localhost:8887/',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/files/, ''),

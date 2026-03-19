@@ -5,6 +5,8 @@ export interface AttendanceRecord {
   check_in: string | null;
   check_out: string | null;
   work_hours: string;
+  ImageAttendance?: ImageAttendance[];
+  images?: ImageAttendance[];
   check_in_device: string | null;
   check_in_confidence: number | null;
   check_out_device: string | null;
@@ -26,17 +28,30 @@ export interface AttendanceRequest {
   confidence: number;
 }
 
+export interface ImageAttendance {
+  ID?: string;
+  ImageURL?: string;
+  ImageType?: string;
+  CreatedAt?: string;
+  id?: string;
+  image_url?: string;
+  image_type?: string;
+  created_at?: string;
+}
+
 // สำหรับการตอบกลับของ check-in/check-out ที่ส่งกลับมาเพียงรายการเดียว
 export interface AttendanceSingleResponse {
   id: string;
   employee_id: string;
+  ImageAttendance?: ImageAttendance[];
+  images?: ImageAttendance[];
   check_in: string;
-  check_out: string;
+  check_out: string | null;
   work_hours: string;
-  check_in_device: string;
-  check_out_device: string;
-  check_in_confidence: number;
-  check_out_confidence: number;
+  check_in_device: string | null;
+  check_out_device: string | null;
+  check_in_confidence: number | null;
+  check_out_confidence: number | null;
 }
 // สำหรับการตอบกลับจากการวิเคราะห์ข้อมูลเข้างานของพนักงานรายบุคคล
 export interface EmployeeAnalysisResponse {
