@@ -208,6 +208,57 @@ const fmtHours = (decimalHours: number): string => {
   return `${h} ชม. ${m} นาที`;
 };
 
+const normalizeImageType = (type: string | undefined): string => {
+  return (type || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+};
+
+const isCheckInImageType = (type: string): boolean => {
+  const normalized = normalizeImageType(type);
+  return (
+    normalized === 'check_in' 
+  );
+};
+
+const isCheckOutImageType = (type: string): boolean => {
+  const normalized = normalizeImageType(type);
+  return (
+    normalized === 'check_out'
+  );
+};
+
+const getAttendanceImageUrls = (record: AttendanceRecord) => {
+  const images = [...(record.ImageAttendance ?? record.images ?? [])].sort(
+    (a, b) =>
+      new Date(a.CreatedAt ?? a.created_at ?? '').getTime() -
+      new Date(b.CreatedAt ?? b.created_at ?? '').getTime()
+  );
+
+  const checkInImage = images.find((img) =>
+    isCheckInImageType(img.ImageType ?? img.image_type ?? '')
+  );
+  const checkOutImage = images.find((img) =>
+    isCheckOutImageType(img.ImageType ?? img.image_type ?? '')
+  );
+
+  return {
+    checkInImageUrl:
+      checkInImage?.ImageURL ??
+      checkInImage?.image_url ??
+      images[0]?.ImageURL ??
+      images[0]?.image_url ??
+      null,
+    checkOutImageUrl:
+      checkOutImage?.ImageURL ??
+      checkOutImage?.image_url ??
+      images[images.length > 1 ? images.length - 1 : 0]?.ImageURL ??
+      images[images.length > 1 ? images.length - 1 : 0]?.image_url ??
+      null,
+  };
+};
+
 // ============ Data processors ============
 
 /** สร้างข้อมูล Bar Chart รายวัน — แสดงชั่วโมงทำงาน */
@@ -962,6 +1013,8 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
                                 : '--:--';
                               const hours = calcHours(rec);
                               const recIsFull = hours >= FULL_HOURS;
+                              const { checkInImageUrl, checkOutImageUrl } =
+                                getAttendanceImageUrls(rec);
 
                               return (
                                 <div
@@ -1101,12 +1154,21 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
                                                 </div>
                                                 <div className="bg-muted overflow-hidden rounded-xl border">
                                                   <div className="flex aspect-square w-full items-center justify-center">
-                                                    <div className="flex flex-col items-center gap-2">
-                                                      <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
-                                                      <span className="text-muted-foreground text-sm font-medium">
-                                                        ยังไม่มีรูปภาพ
-                                                      </span>
-                                                    </div>
+                                                    {checkInImageUrl ? (
+                                                      <img
+                                                        src={checkInImageUrl}
+                                                        alt="รูปเข้างาน"
+                                                        loading="lazy"
+                                                        className="h-full w-full object-cover"
+                                                      />
+                                                    ) : (
+                                                      <div className="flex flex-col items-center gap-2">
+                                                        <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
+                                                        <span className="text-muted-foreground text-sm font-medium">
+                                                          ยังไม่มีรูปภาพ
+                                                        </span>
+                                                      </div>
+                                                    )}
                                                   </div>
                                                 </div>
                                               </div>
@@ -1125,12 +1187,21 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
                                                 </div>
                                                 <div className="bg-muted overflow-hidden rounded-xl border">
                                                   <div className="flex aspect-square w-full items-center justify-center">
-                                                    <div className="flex flex-col items-center gap-2">
-                                                      <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
-                                                      <span className="text-muted-foreground text-sm font-medium">
-                                                        ยังไม่มีรูปภาพ
-                                                      </span>
-                                                    </div>
+                                                    {checkOutImageUrl ? (
+                                                      <img
+                                                        src={checkOutImageUrl}
+                                                        alt="รูปออกงาน"
+                                                        loading="lazy"
+                                                        className="h-full w-full object-cover"
+                                                      />
+                                                    ) : (
+                                                      <div className="flex flex-col items-center gap-2">
+                                                        <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
+                                                        <span className="text-muted-foreground text-sm font-medium">
+                                                          ยังไม่มีรูปภาพ
+                                                        </span>
+                                                      </div>
+                                                    )}
                                                   </div>
                                                 </div>
                                               </div>
