@@ -59,9 +59,67 @@ const getConfidenceColor = (confidence: number | null): string => {
   }
 };
 
+const normalizeImageType = (type: string | undefined): string => {
+  return (type || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+};
+
+const isCheckInImageType = (type: string): boolean => {
+  const normalized = normalizeImageType(type);
+  return (
+    normalized === 'check_in' ||
+    normalized === 'clock_in' ||
+    normalized === 'in' ||
+    normalized === 'entry'
+  );
+};
+
+const isCheckOutImageType = (type: string): boolean => {
+  const normalized = normalizeImageType(type);
+  return (
+    normalized === 'check_out' ||
+    normalized === 'clock_out' ||
+    normalized === 'out' ||
+    normalized === 'exit'
+  );
+};
+
+const getAttendanceImageUrls = (record: AttendanceRecord) => {
+  const images = [...(record.ImageAttendance ?? record.images ?? [])].sort(
+    (a, b) =>
+      new Date(a.CreatedAt ?? a.created_at ?? '').getTime() -
+      new Date(b.CreatedAt ?? b.created_at ?? '').getTime()
+  );
+
+  const checkInImage = images.find((img) =>
+    isCheckInImageType(img.ImageType ?? img.image_type ?? '')
+  );
+  const checkOutImage = images.find((img) =>
+    isCheckOutImageType(img.ImageType ?? img.image_type ?? '')
+  );
+
+  return {
+    checkInImageUrl:
+      checkInImage?.ImageURL ??
+      checkInImage?.image_url ??
+      images[0]?.ImageURL ??
+      images[0]?.image_url ??
+      null,
+    checkOutImageUrl:
+      checkOutImage?.ImageURL ??
+      checkOutImage?.image_url ??
+      images[images.length > 1 ? images.length - 1 : 0]?.ImageURL ??
+      images[images.length > 1 ? images.length - 1 : 0]?.image_url ??
+      null,
+  };
+};
+
 // Card attendance
 const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
   const isActive = !record.check_out;
+  const { checkInImageUrl, checkOutImageUrl } = getAttendanceImageUrls(record);
 
   return (
     <div className="bg-card group hover:border-primary/50 overflow-hidden rounded-lg border transition-all duration-200 hover:shadow-md">
@@ -207,12 +265,21 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                       </div>
                       <div className="bg-muted overflow-hidden rounded-xl border">
                         <div className="flex aspect-square w-full items-center justify-center">
-                          <div className="flex flex-col items-center gap-2">
-                            <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
-                            <span className="text-muted-foreground text-sm font-medium">
-                              ยังไม่มีรูปภาพ
-                            </span>
-                          </div>
+                          {checkInImageUrl ? (
+                            <img
+                              src={checkInImageUrl}
+                              alt="รูปเข้างาน"
+                              loading="lazy"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center gap-2">
+                              <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
+                              <span className="text-muted-foreground text-sm font-medium">
+                                ยังไม่มีรูปภาพ
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -233,12 +300,21 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                       </div>
                       <div className="bg-muted overflow-hidden rounded-xl border">
                         <div className="flex aspect-square w-full items-center justify-center">
-                          <div className="flex flex-col items-center gap-2">
-                            <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
-                            <span className="text-muted-foreground text-sm font-medium">
-                              ยังไม่มีรูปภาพ
-                            </span>
-                          </div>
+                          {checkOutImageUrl ? (
+                            <img
+                              src={checkOutImageUrl}
+                              alt="รูปออกงาน"
+                              loading="lazy"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center gap-2">
+                              <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
+                              <span className="text-muted-foreground text-sm font-medium">
+                                ยังไม่มีรูปภาพ
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
