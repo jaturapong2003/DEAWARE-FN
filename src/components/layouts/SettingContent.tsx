@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { useKeycloak } from '@react-keycloak/web';
 import { useMutation } from '@tanstack/react-query';
 import { fetchWithAuth } from '@/config/fetctWithAuth';
 import toast from 'react-hot-toast';
 import {
-  CheckCircle2,
   ImageIcon,
   Settings,
   Sparkles,
@@ -38,6 +37,30 @@ export default function SettingContent({ open, onClose }: Props) {
   const [faceFiles, setFaceFiles] = useState<File[]>([]);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [position, setPosition] = useState<string>('');
+
+  const clearProfile = () => setProfileFiles([]);
+  const clearFace = () => setFaceFiles([]);
+
+  // derive object URLs for previews and revoke them on change
+  const profilePreviews = useMemo(
+    () => profileFiles.map((f) => URL.createObjectURL(f)),
+    [profileFiles]
+  );
+  useEffect(() => {
+    return () => {
+      profilePreviews.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [profilePreviews]);
+
+  const facePreviews = useMemo(
+    () => faceFiles.map((f) => URL.createObjectURL(f)),
+    [faceFiles]
+  );
+  useEffect(() => {
+    return () => {
+      facePreviews.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [facePreviews]);
 
   const uploadProfileImagesMutation = useMutation({
     mutationFn: async (): Promise<{ message?: string }> => {
@@ -214,15 +237,21 @@ export default function SettingContent({ open, onClose }: Props) {
                       {profileFiles.length > 0 ? (
                         <div className="animate-in zoom-in-95 flex flex-col items-center gap-3 duration-200">
                           <div className="flex -space-x-3">
-                            {profileFiles.slice(0, 3).map((_, i) => (
+                            {profilePreviews.slice(0, 3).map((url, i) => (
                               <div
                                 key={i}
-                                className="bg-primary flex h-12 w-12 items-center justify-center rounded-full border-4 border-[#0a0a0b] text-xs font-bold shadow-lg"
+                                className="relative h-30 w-30 overflow-hidden rounded-md border-3 border-dashed p-0.5 shadow-inner"
                               >
                                 {i === 2 && profileFiles.length > 3 ? (
-                                  `+${profileFiles.length - 2}`
+                                  <div className="bg-primary flex h-full w-full items-center justify-center text-xs font-bold text-white">
+                                    {`+${profileFiles.length - 2}`}
+                                  </div>
                                 ) : (
-                                  <CheckCircle2 size={20} />
+                                  <img
+                                    src={url}
+                                    alt={`preview-${i}`}
+                                    className="h-full w-full rounded-sm object-cover"
+                                  />
                                 )}
                               </div>
                             ))}
@@ -252,12 +281,22 @@ export default function SettingContent({ open, onClose }: Props) {
                 </CardContent>
 
                 <CardFooter className="mt-6 flex justify-end px-0!">
-                  <Button
-                    onClick={() => uploadProfileImagesMutation.mutate()}
-                    disabled={isPending || profileFiles.length === 0}
-                  >
-                    {isPending ? 'กำลังอัปโหลด...' : 'อัปโหลดรูปโปรไฟล์'}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => clearProfile()}
+                      disabled={profileFiles.length === 0}
+                    >
+                      ล้างรูป
+                    </Button>
+
+                    <Button
+                      onClick={() => uploadProfileImagesMutation.mutate()}
+                      disabled={isPending || profileFiles.length === 0}
+                    >
+                      {isPending ? 'กำลังอัปโหลด...' : 'อัปโหลดรูปโปรไฟล์'}
+                    </Button>
+                  </div>
                 </CardFooter>
               </Card>
             </section>
@@ -305,27 +344,36 @@ export default function SettingContent({ open, onClose }: Props) {
                       {faceFiles.length > 0 ? (
                         <div className="animate-in zoom-in-95 flex flex-col items-center gap-3 duration-200">
                           <div className="flex -space-x-3">
-                            {faceFiles.slice(0, 3).map((_, i) => (
+                            {facePreviews.slice(0, 3).map((url, i) => (
                               <div
                                 key={i}
-                                className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-[#0a0a0b] bg-indigo-500 text-xs font-bold text-white shadow-lg"
+                                className="relative h-30 w-30 overflow-hidden rounded-md border-2 border-dashed p-0.5 text-xs font-bold text-white shadow-lg"
                               >
                                 {i === 2 && faceFiles.length > 3 ? (
-                                  `+${faceFiles.length - 2}`
+                                  <div className="flex h-full w-full items-center justify-center text-xs font-bold">
+                                    {`+${faceFiles.length - 2}`}
+                                  </div>
                                 ) : (
-                                  <CheckCircle2 size={20} />
+                                  <img
+                                    src={url}
+                                    alt={`face-preview-${i}`}
+                                    className="h-full w-full rounded-md object-cover"
+                                  />
                                 )}
                               </div>
                             ))}
                           </div>
-                          <p className="text-sm font-semibold tracking-wide text-indigo-400">
+                          <p className="text-sm font-semibold tracking-wide">
                             พร้อมให้ AI ประมวลผล {faceFiles.length} รูป
                           </p>
                         </div>
                       ) : (
                         <>
                           <div className="rounded-full p-4 shadow-inner transition-colors group-hover:opacity-90">
-                            <UploadCloud size={28} className="transition-colors" />
+                            <UploadCloud
+                              size={28}
+                              className="transition-colors"
+                            />
                           </div>
                           <p className="text-sm">
                             ลากไฟล์มาวาง หรือ{' '}
@@ -340,13 +388,22 @@ export default function SettingContent({ open, onClose }: Props) {
                 </CardContent>
 
                 <CardFooter className="mt-6 flex justify-end px-0!">
-                  <Button
-                    variant="secondary"
-                    onClick={() => uploadFaceImagesMutation.mutate()}
-                    disabled={isPending || faceFiles.length === 0}
-                  >
-                    {isPending ? 'กำลังส่งให้ AI...' : 'อัปโหลดให้ AI'}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => clearFace()}
+                      disabled={faceFiles.length === 0}
+                    >
+                      ล้างรูป
+                    </Button>
+
+                    <Button
+                      onClick={() => uploadFaceImagesMutation.mutate()}
+                      disabled={isPending || faceFiles.length === 0}
+                    >
+                      {isPending ? 'กำลังส่งให้ AI...' : 'อัปโหลดให้ AI'}
+                    </Button>
+                  </div>
                 </CardFooter>
               </Card>
             </section>

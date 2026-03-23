@@ -977,7 +977,7 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
                                     }
                                     className="text-[10px]"
                                   >
-                                    {recIsFull ? '✅ ครบ' : '⚠️ ไม่ครบ'}
+                                    {recIsFull ? ' ครบ' : 'ไม่ครบ'}
                                   </Badge>
                                 </div>
                               </div>

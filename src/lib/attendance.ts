@@ -33,28 +33,23 @@ export const getAttendanceImageUrls = (record: {
 
   return {
     checkInImageUrl:
-      checkInImage?.ImageURL ??
-      checkInImage?.image_url ??
-      firstImage?.ImageURL ??
-      firstImage?.image_url ??
-      null,
+      checkInImage?.ImageURL ?? checkInImage?.image_url ?? null,
     checkOutImageUrl:
-      checkOutImage?.ImageURL ??
-      checkOutImage?.image_url ??
-      lastImage?.ImageURL ??
-      lastImage?.image_url ??
-      null,
+      checkOutImage?.ImageURL ?? checkOutImage?.image_url ?? lastImage?.ImageURL ?? lastImage?.image_url ?? null,
   };
 };
 
 export const getDeviceName = (device: string | null): string => {
+  // If device is missing or empty, assume it's a camera device
+  if (!device) return 'กล้อง';
+
   switch (device) {
     case 'web_app':
       return 'เว็บแอพ';
     case 'cam-01':
       return 'กล้อง 1';
     default:
-      return '-';
+      return device;
   }
 };
 

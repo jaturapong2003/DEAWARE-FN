@@ -17,11 +17,16 @@ const AttendanceDeviceCard: React.FC<{
     );
   }
 
+  const displayDevice =
+    device === 'web_app' && confidence != null && confidence < 0.7
+      ? 'cam-01'
+      : device ?? null;
+
   return (
     <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
       <div className="flex items-center gap-2">
-        <DeviceIcon device={device ?? null} />
-        <span className="text-xs font-medium">{getDeviceName(device ?? null)}</span>
+        <DeviceIcon device={displayDevice} />
+        <span className="text-xs font-medium">{getDeviceName(displayDevice)}</span>
       </div>
       {confidence != null && (
         <div className="flex items-center justify-between">
