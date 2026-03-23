@@ -86,7 +86,7 @@ function AttendanceMePage() {
               <BarChart3 className="text-primary h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">แดชบอร์ด</h2>
+              <h2 className="text-lg font-bold">หน้าสรุปผล</h2>
               <p className="text-muted-foreground text-sm">
                 ภาพรวมการเข้างานของ {employeeDataForDashboard.display_name}
               </p>

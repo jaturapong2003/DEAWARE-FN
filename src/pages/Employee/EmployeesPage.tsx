@@ -18,6 +18,8 @@ import apiClient from '@/lib/apiClient';
 import LoadingPage from '@/components/common/LoadingPage';
 import ErrorPage from '@/components/common/ErrorPage';
 import { useKeycloak } from '@react-keycloak/web';
+import CreateEmployeeDialog from '@/components/common/CreateEmployeeDialog';
+import toast from 'react-hot-toast';
 
 // Employee Card
 const EmployeeCard: React.FC<{ employee: EmployeesList }> = ({ employee }) => {
@@ -129,16 +131,25 @@ function EmployeesPage() {
             </div>
           </div>
 
-          <div className="group relative w-full md:w-96">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-4">
-              <Search className="h-5 w-5 text-slate-400 transition-colors group-focus-within:text-[#d1385c]" />
+          <div className="flex items-center gap-3">
+            <div className="group relative w-full md:w-96">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-4">
+                <Search className="h-5 w-5 text-slate-400 transition-colors group-focus-within:text-[#d1385c]" />
+              </div>
+              <Input
+                type="text"
+                placeholder="ค้นหาชื่อ, อีเมล หรือตำแหน่ง..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-13 w-full rounded-2xl border py-3.5 pr-4 pl-12 text-sm shadow-inner backdrop-blur-md transition-all outline-none focus:border-[#d1385c]/50 focus:bg-white/5 focus:ring-1 focus:ring-[#d1385c]/50"
+              />
             </div>
-            <Input
-              type="text"
-              placeholder="ค้นหาชื่อ, อีเมล หรือตำแหน่ง..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-13 w-full rounded-2xl border py-3.5 pr-4 pl-12 text-sm shadow-inner backdrop-blur-md transition-all outline-none focus:border-[#d1385c]/50 focus:bg-white/5 focus:ring-1 focus:ring-[#d1385c]/50"
+            <CreateEmployeeDialog
+              onCreate={(data) =>
+                toast.success(
+                  `สร้าง ${data.display_name || data.user_name} (mock)`
+                )
+              }
             />
           </div>
         </div>

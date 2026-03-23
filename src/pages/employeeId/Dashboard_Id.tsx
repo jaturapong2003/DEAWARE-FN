@@ -40,7 +40,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -48,6 +48,13 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
+import {
+  Tooltip as UITooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 import PaginationControll from '@/components/filter/PaginationControll';
 
 interface DashboardIdProps {
@@ -69,13 +76,19 @@ const getMonthKey = (date: Date): string => {
 /** คำนวณเกรด A/B/C จำนวนวันที่ทำครบ 9 ชม. (รายเดือน: ~20-22 วันทำงาน) */
 const calcMonthlyGrade = (
   fullDaysCount: number,
-  totalDaysCount: number
-): 'A' | 'B' | 'C' => {
-  if (totalDaysCount === 0) return 'C';
-  const percentage = (fullDaysCount / totalDaysCount) * 100;
-  if (percentage >= 90) return 'A'; // ≥90%
-  if (percentage >= 75) return 'B'; // 75-89%
-  return 'C'; // <75%
+  totalDaysCount: number,
+  avgHours: number
+): 'A' | 'B' | 'C' | 'F' => {
+  if (totalDaysCount === 0) return 'F';
+  const successRatio = (fullDaysCount / totalDaysCount) * 100;
+  // A: successRatio >= 90% AND avgHours >= 9.0
+  if (successRatio >= 90 && avgHours >= FULL_HOURS) return 'A';
+  // B: successRatio >= 75%
+  if (successRatio >= 75) return 'B';
+  // C: successRatio >= 50%
+  if (successRatio >= 50) return 'C';
+  // F: otherwise
+  return 'F';
 };
 
 /** สีเกรด */
@@ -117,7 +130,7 @@ const getGradeLabel = (grade: string | null | undefined): string => {
 const buildMonthlyGradeData = (records: AttendanceRecord[]) => {
   const monthlyData = new Map<
     string,
-    { fullDays: number; totalDays: number }
+    { fullDays: number; totalDays: number; totalHours: number }
   >();
 
   records.forEach((r) => {
@@ -128,12 +141,14 @@ const buildMonthlyGradeData = (records: AttendanceRecord[]) => {
     const monthKey = getMonthKey(date);
 
     if (!monthlyData.has(monthKey)) {
-      monthlyData.set(monthKey, { fullDays: 0, totalDays: 0 });
+      monthlyData.set(monthKey, { fullDays: 0, totalDays: 0, totalHours: 0 });
     }
 
     const entry = monthlyData.get(monthKey)!;
     entry.totalDays += 1;
 
+    const hrs = calcHours(r);
+    entry.totalHours += hrs;
     if (isFullHours(r)) {
       entry.fullDays += 1;
     }
@@ -144,12 +159,15 @@ const buildMonthlyGradeData = (records: AttendanceRecord[]) => {
     .map(([monthKey, data]) => {
       const [year, month] = monthKey.split('-').map(Number);
       const monthDate = new Date(year, month - 1, 1);
+      const avgHours =
+        data.totalDays > 0 ? data.totalHours / data.totalDays : 0;
       return {
         monthKey,
         monthDate,
         fullDays: data.fullDays,
         totalDays: data.totalDays,
-        grade: calcMonthlyGrade(data.fullDays, data.totalDays),
+        avgHours,
+        grade: calcMonthlyGrade(data.fullDays, data.totalDays, avgHours),
       };
     });
 };
@@ -366,7 +384,7 @@ function DashboardId({
 
   // ดึงข้อมูล analysis จาก API ตามช่วงเวลา (ถ้ามี employee)
   const { analysis: rangedAnalysis } = useEmployeeAnalysis(
-    employee?.user_id,
+    onRangeChange ? undefined : employee?.user_id,
     getStartDateForRange(range),
     new Date()
   );
@@ -462,15 +480,21 @@ function DashboardId({
     const totalP = pieD.reduce((sum, d) => sum + d.value, 0);
     const pieWithTotal = pieD.map((d) => ({ ...d, total: totalP }));
 
-    const f = effectiveRecords.filter(isFullHours).length;
-    const nf = effectiveRecords.filter(
-      (r) => r.check_in && !isFullHours(r)
-    ).length;
-    const tHrs = effectiveRecords.reduce((sum, r) => sum + calcHours(r), 0);
-    const avgHrs =
-      effectiveRecords.length > 0 ? tHrs / effectiveRecords.length : 0;
-    const expectedT =
-      effectiveRecords.filter((r) => r.check_in).length * FULL_HOURS;
+    // Group records by date to compute per-day totals (prevents double-counting when multiple records exist per day)
+    const dayTotals = new Map<string, number>();
+    effectiveRecords.forEach((r) => {
+      if (!r.check_in) return;
+      const key = formatDate(r.check_in);
+      const hrs = calcHours(r);
+      dayTotals.set(key, (dayTotals.get(key) ?? 0) + hrs);
+    });
+
+    const dayEntries = Array.from(dayTotals.values());
+    const f = dayEntries.filter((hrs) => hrs >= FULL_HOURS).length;
+    const nf = dayEntries.filter((hrs) => hrs > 0 && hrs < FULL_HOURS).length;
+    const tHrs = dayEntries.reduce((sum, h) => sum + h, 0);
+    const avgHrs = dayEntries.length > 0 ? tHrs / dayEntries.length : 0;
+    const expectedT = dayEntries.length * FULL_HOURS;
     const dHrs = tHrs - expectedT;
 
     return {
@@ -680,7 +704,7 @@ function DashboardId({
                     fill: '#ef4444',
                   }}
                 />
-                <Tooltip content={<CustomBarTooltip />} />
+                <RechartsTooltip content={<CustomBarTooltip />} />
                 {/* แท่งปกติ (max 9 ชม.) — เขียวครบ/ส้มไม่ครบ */}
                 <Bar
                   dataKey="normal"
@@ -752,6 +776,131 @@ function DashboardId({
                   <span className="text-sm font-medium opacity-80">
                     ({getGradeLabel(selectedMonthGrade)})
                   </span>
+                  {/* Info tooltip explaining calculation (prefer backend summary when available) */}
+                  <TooltipProvider delayDuration={0}>
+                    <UITooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground ml-2 inline-flex items-center rounded-full p-1"
+                          aria-label="คำอธิบายการคำนวณเกรด"
+                        >
+                          <Info className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        sideOffset={6}
+                        className="bg-background text-foreground max-w-sm border shadow-inner"
+                      >
+                        <div className="space-y-2 text-xs">
+                          {usedAnalysis?.summary ? (
+                            <>
+                              <div className="font-semibold">สรุปการคำนวณ</div>
+                              <div>
+                                วันทั้งหมด:{' '}
+                                {(
+                                  (usedAnalysis.summary.success_days_count ??
+                                    0) +
+                                  (usedAnalysis.summary.partial_days_count ?? 0)
+                                ).toString()}{' '}
+                                วัน
+                              </div>
+                              <div>
+                                ชั่วโมงรวม:{' '}
+                                {(
+                                  (usedAnalysis.summary.total_work_minutes ??
+                                    0) / 60
+                                ).toFixed(2)}
+                                ชม. (
+                                {(
+                                  usedAnalysis.summary.total_work_minutes ?? 0
+                                ).toLocaleString()}{' '}
+                                นาที)
+                              </div>
+                              <div>
+                                วันครบ ≥9 ชม.:{' '}
+                                {usedAnalysis.summary.success_days_count ?? 0}{' '}
+                                วัน
+                              </div>
+                              <div>
+                                วันไม่ครบ:{' '}
+                                {usedAnalysis.summary.partial_days_count ?? 0}{' '}
+                                วัน
+                              </div>
+                              <div>
+                                ชั่วโมงเฉลี่ย/วัน:{' '}
+                                {Number(
+                                  usedAnalysis.summary.avg_hours_per_day ?? 0
+                                ).toFixed(2)}{' '}
+                                ชม.
+                              </div>
+                              {(() => {
+                                const success =
+                                  usedAnalysis.summary.success_days_count ?? 0;
+                                const partial =
+                                  usedAnalysis.summary.partial_days_count ?? 0;
+                                const total = success + partial;
+                                const avgHours = Number(
+                                  usedAnalysis.summary.avg_hours_per_day ?? 0
+                                );
+                                const ratio = total > 0 ? (success / total) * 100 : 0;
+                                let computedGrade = 'F';
+                                if (ratio >= 90 && avgHours >= FULL_HOURS) {
+                                  computedGrade = 'A';
+                                } else if (ratio >= 75) {
+                                  computedGrade = 'B';
+                                } else if (ratio >= 50) {
+                                  computedGrade = 'C';
+                                }
+                                const reason =
+                                  computedGrade === 'A'
+                                    ? `สัดส่วน ≥ 90% และ ชั่วโมงเฉลี่ย ≥ ${FULL_HOURS}`
+                                    : computedGrade === 'B'
+                                    ? `สัดส่วน ≥ 75%`
+                                    : computedGrade === 'C'
+                                    ? `สัดส่วน ≥ 50%`
+                                    : `สัดส่วน < 50%`;
+
+                                return (
+                                  <div>
+                                    สัดส่วนสำเร็จ = {success} / {total} ={' '}
+                                    {ratio.toFixed(0)}% → เกรด {computedGrade}{' '}
+                                    ({reason})
+                                  </div>
+                                );
+                              })()}
+                              <div className="font-medium">
+                                เกรดปัจจุบัน:{' '}
+                                {usedAnalysis.summary.performance_grade}
+                              </div>
+                              <div className="font-medium">
+                                เกณฑ์: A ถ้า สัดส่วนสำเร็จ ≥ 90%
+                                และชั่วโมงเฉลี่ย ≥ 9.0
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="font-semibold">
+                                ตัวอย่างกระชับ
+                              </div>
+                              <div>จำนวนวันทั้งหมด = 20 วัน</div>
+                              <div>ชั่วโมงรวม = 10,950 นาที (≈ 182.50 ชม.)</div>
+                              <div>
+                                วันครบ (≥9 ชม.) = 18 วัน, วันไม่ครบ = 2 วัน
+                              </div>
+                              <div>
+                                ชั่วโมงเฉลี่ย/วัน = 182.5 / 20 = 9.13 ชม.
+                              </div>
+                              <div>
+                                สัดส่วนสำเร็จ = 18 / 20 = 90% → เกรด A (เพราะ
+                                สัดส่วน ≥ 90% และ ชั่วโมงเฉลี่ย ≥ 9.0)
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
                 </p>
               </div>
             )}
@@ -776,7 +925,7 @@ function DashboardId({
                     <Cell key={`cell-${i}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip content={<CustomPieTooltip />} />
+                <RechartsTooltip content={<CustomPieTooltip />} />
                 <Legend
                   verticalAlign="bottom"
                   iconType="circle"
