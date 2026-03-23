@@ -3,6 +3,8 @@ import type { LucideIcon } from 'lucide-react';
 import { useKeycloak } from '@react-keycloak/web';
 import { useMutation } from '@tanstack/react-query';
 import { fetchWithAuth } from '@/config/fetctWithAuth';
+import apiClient from '@/lib/apiClient';
+import useAuthStore from '@/stores/authStore';
 import toast from 'react-hot-toast';
 import {
   ImageIcon,
@@ -63,7 +65,7 @@ export default function SettingContent({ open, onClose }: Props) {
   }, [facePreviews]);
 
   const uploadProfileImagesMutation = useMutation({
-    mutationFn: async (): Promise<{ message?: string }> => {
+    mutationFn: async (): Promise<{ message?: string; url?: string }> => {
       const formData = new FormData();
       profileFiles.forEach((file) => formData.append('image', file));
 
@@ -80,10 +82,18 @@ export default function SettingContent({ open, onClose }: Props) {
         throw new Error(`API Error: ${res.status} ${res.statusText} — ${body}`);
       }
 
-      return (await res.json()) as { message?: string };
+      return (await res.json()) as { message?: string; url?: string };
     },
-    onSuccess: (data) =>
-      toast.success(data?.message || 'อัปโหลดรูปโปรไฟล์สำเร็จ'),
+    onSuccess: (data) => {
+      setProfileFiles([]);
+      toast.success(data?.message || 'อัปโหลดรูปโปรไฟล์สำเร็จ');
+
+      const setAccountInfo = useAuthStore.getState().setAccountInfo;
+      apiClient
+        .get('/employee/me')
+        .then((resp) => setAccountInfo(resp.data))
+        .catch(() => {});
+    },
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : 'อัปโหลดรูปโปรไฟล์ล้มเหลว';
@@ -100,8 +110,10 @@ export default function SettingContent({ open, onClose }: Props) {
         body: formData,
       })) as { message?: string };
     },
-    onSuccess: (data) =>
-      toast.success(data?.message || 'อัปโหลดรูปใบหน้าสำเร็จ'),
+    onSuccess: (data) => {
+      setFaceFiles([]);
+      toast.success(data?.message || 'อัปโหลดรูปใบหน้าสำเร็จ');
+    },
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : 'อัปโหลดรูปใบหน้าล้มเหลว';
