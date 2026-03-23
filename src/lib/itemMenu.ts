@@ -26,9 +26,4 @@ export const navigationItems: NavItem[] = [
     icon: UsersIcon,
     role: 'admin',
   },
-  // {
-  //   title: 'ประวัติทั้งหมด',
-  //   url: '/history',
-  //   icon: UsersIcon,
-  // },
 ];

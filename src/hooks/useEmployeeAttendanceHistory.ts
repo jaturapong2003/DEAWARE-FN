@@ -1,23 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import type { AttendanceRecord } from '@/@types/Attendance';
 import apiClient from '@/lib/apiClient';
+import { formatDateToISO } from '@/lib/date';
+import type { EmployeeAttendanceRecord } from '@/@types';
 
-// Response type จาก API
+// Response type จาก API (re-using central types)
 interface EmployeeHistoryResponse {
-  records: AttendanceRecord[];
+  records: EmployeeAttendanceRecord[];
   page: number;
   limit: number;
   total: number;
   total_pages: number;
 }
-
-// แปลง Date เป็น YYYY-MM-DD สำหรับส่ง API
-const formatDateParam = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
 
 /**
  * Hook สำหรับดึงประวัติการเข้างานของพนักงานตาม ID
@@ -30,11 +23,19 @@ export const useEmployeeAttendanceHistory = (
   startDate?: Date,
   endDate?: Date
 ) => {
-  const startStr = startDate ? formatDateParam(startDate) : undefined;
-  const endStr = endDate ? formatDateParam(endDate) : undefined;
+  const startStr = startDate ? formatDateToISO(startDate) : undefined;
+  const endStr = endDate ? formatDateToISO(endDate) : undefined;
 
   const query = useQuery<EmployeeHistoryResponse>({
-    queryKey: ['attendance', 'history', employeeId, page, limit, startStr, endStr],
+    queryKey: [
+      'attendance',
+      'history',
+      employeeId,
+      page,
+      limit,
+      startStr,
+      endStr,
+    ],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('page', String(page));

@@ -8,7 +8,6 @@ import useAuthStore from '@/stores/authStore';
 // Lazy load pages
 const HomePage = lazy(() => import('../pages/Home/HomePage'));
 const HistoryPage = lazy(() => import('../pages/HistoryPage'));
-const ApiTestPage = lazy(() => import('../ApiTestPage'));
 const EmployeesPage = lazy(() => import('@/pages/Employee/EmployeesPage'));
 const EmployeeIdPage = lazy(() => import('@/pages/employeeId/EmployeeIdpage'));
 const AttendanceMePage = lazy(
@@ -55,7 +54,6 @@ const AppRoutes: React.FC = () => {
             <Route path="/" element={<HomePage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/attendance" element={<AttendanceMePage />} />
-            <Route path="/api-test" element={<ApiTestPage />} />
             <Route path="/employees">
               <Route index element={<EmployeesPage />} />
               <Route path="kpi" element={<KpiDashboardPage />} />

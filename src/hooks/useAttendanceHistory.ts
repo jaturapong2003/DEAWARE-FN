@@ -1,35 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/apiClient';
+import type { AttendanceResponse } from '@/@types/Attendance';
 
-// ประเภทข้อมูลประวัติการเข้างาน (ตาม API จริง)
-export interface AttendanceRecord {
-  id: string;
-  employee_id: string;
-  check_in: string;
-  check_out: string | null;
-  work_hours: string | null;
-  check_in_device: string;
-  check_in_confidence: number;
-  check_out_device: string | null;
-  check_out_confidence: number | null;
-}
-
-// ประเภท response จาก API
-interface HistoryResponse {
-  records: AttendanceRecord[];
-  total: number;
-}
-
-/**
- * Hook สำหรับดึงประวัติการเข้างาน (ใช้ React Query)
- */
 export const useAttendanceHistory = (limit: number = 10, offset: number = 0) => {
-
-
-  const query = useQuery<HistoryResponse>({
+  const query = useQuery<AttendanceResponse>({
     queryKey: ['attendance', 'history', limit, offset],
     queryFn: async () => {
-      const response = await apiClient.get<HistoryResponse>(
+      const response = await apiClient.get<AttendanceResponse>(
         `/attendance/history?limit=${limit}&offset=${offset}`
       );
       return response.data;
