@@ -59,7 +59,7 @@ function AttendanceMePage() {
     (historyLoading && keycloak.authenticated) ||
     (analysisLoading && keycloak.authenticated);
   if (isLoading && keycloak.authenticated) {
-    return <LoadingPage message="กำลังโหลดข้อมูลส่วนตัว..." />;
+    return <LoadingPage message="กำลังโหลดข้อมูลส่วนตัว..." fullScreen />;
   }
 
   if (!profile) {

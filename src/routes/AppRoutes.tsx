@@ -7,7 +7,6 @@ import useAuthStore from '@/stores/authStore';
 
 // Lazy load pages
 const HomePage = lazy(() => import('../pages/Home/HomePage'));
-const HistoryPage = lazy(() => import('../pages/HistoryPage'));
 const EmployeesPage = lazy(() => import('@/pages/Employee/EmployeesPage'));
 const EmployeeIdPage = lazy(() => import('@/pages/employeeId/EmployeeIdpage'));
 const AttendanceMePage = lazy(
@@ -16,7 +15,6 @@ const AttendanceMePage = lazy(
 const KpiDashboardPage = lazy(
   () => import('@/pages/Employee/KpiDashboardPage')
 );
-
 
 const AppRoutes: React.FC = () => {
   const { keycloak, initialized } = useKeycloak();
@@ -52,7 +50,6 @@ const AppRoutes: React.FC = () => {
         >
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/history" element={<HistoryPage />} />
             <Route path="/attendance" element={<AttendanceMePage />} />
             <Route path="/employees">
               <Route index element={<EmployeesPage />} />

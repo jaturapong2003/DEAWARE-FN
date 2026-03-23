@@ -30,7 +30,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
       {/* make SidebarInset the scroll container so header (inside it) can stick */}
       <SidebarInset className="flex h-svh flex-col overflow-auto">
-        <header className="bg-background sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <header className="bg-background sticky top-0  flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex flex-1 items-center justify-between">
