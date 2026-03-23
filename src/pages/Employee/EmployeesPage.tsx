@@ -110,7 +110,7 @@ function EmployeesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="border-border border-border relative overflow-hidden rounded-3xl border p-6 backdrop-blur-xl sm:p-8">
+      <div className="border-border relative overflow-hidden rounded-3xl border p-6 backdrop-blur-xl sm:p-8">
         <div className="absolute -top-32 -left-32 h-64 w-64 rounded-full bg-[#d1385c]/20 blur-[80px]" />
 
         <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
