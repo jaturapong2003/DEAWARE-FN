@@ -29,6 +29,7 @@ import {
   CalendarDays,
   AlertTriangle,
   UserRoundCog,
+  BarChart3,
 } from 'lucide-react';
 import DashboardId from './Dashboard_Id';
 import {
@@ -127,7 +128,7 @@ function EmaillDialog({ employeeId }: { employeeId: string }) {
           <DialogHeader>
             <DialogTitle>ฟอร์มส่งอีเมลให้พนักงาน</DialogTitle>
           </DialogHeader>
-          <FieldGroup className='mt-5'>
+          <FieldGroup className="mt-5">
             <Field>
               <Label>หัวข้อ</Label>
               <Input
@@ -163,7 +164,7 @@ function EmaillDialog({ employeeId }: { employeeId: string }) {
               </RadioGroup>
             </Field>
           </FieldGroup>
-          <DialogFooter className='mt-6'>
+          <DialogFooter className="mt-6">
             <DialogClose asChild>
               <Button
                 variant={'outline'}
@@ -190,10 +191,7 @@ function EmployeeIdPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    to: new Date(),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   // รับข้อมูลพนักงานจาก route state
   const stateEmployee = (location.state as { employee?: EmployeesList })
@@ -388,11 +386,16 @@ function EmployeeIdPage() {
       {/* === เลือกช่วงวัน + แดชบอร์ด === */}
       <div className="bg-card rounded-lg border">
         <div className="flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-bold">ภาพรวมและประวัติการเข้างาน</h2>
-            <p className="text-muted-foreground text-sm">
-              แดชบอร์ดและรายการบันทึกการเข้า-ออกงาน
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-lg">
+              <BarChart3 className="text-primary h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">แดชบอร์ด</h2>
+              <p className="text-muted-foreground text-sm">
+                ภาพรวมการเข้างานของ {employee.display_name}
+              </p>
+            </div>
           </div>
 
           {/* 📅 เลือกช่วงวันที่ */}
@@ -435,23 +438,21 @@ function EmployeeIdPage() {
                 />
               </PopoverContent>
             </Popover>
-            {dateRange && (
-              <button
-                onClick={() =>
-                  setDateRange({
-                    from: new Date(
-                      new Date().getFullYear(),
-                      new Date().getMonth(),
-                      1
-                    ),
-                    to: new Date(),
-                  })
-                }
-                className="text-muted-foreground hover:text-foreground text-sm"
-              >
-                ล้าง
-              </button>
-            )}
+            <Button
+              variant={'outline'}
+              onClick={() =>
+                setDateRange({
+                  from: new Date(
+                    new Date().getFullYear(),
+                    new Date().getMonth(),
+                    1
+                  ),
+                  to: new Date(),
+                })
+              }
+            >
+              ล้าง
+            </Button>
           </div>
         </div>
 
@@ -462,6 +463,12 @@ function EmployeeIdPage() {
             records={dashboardRecords}
             total={total}
             analysis={analysis}
+            onRangeChange={(start, end) =>
+              setDateRange({
+                from: start ?? dateRange?.from,
+                to: end ?? dateRange?.to,
+              })
+            }
           />
         </div>
       </div>

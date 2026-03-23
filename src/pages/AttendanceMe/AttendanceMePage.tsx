@@ -9,7 +9,7 @@ import {
   PopoverContent,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { CalendarDays } from 'lucide-react';
+import { BarChart3, CalendarDays } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
 import useEmployeeAnalysis from '@/hooks/useEmployeeAnalysis';
@@ -81,11 +81,16 @@ function AttendanceMePage() {
       {/* Dashboard Section */}
       <div className="bg-card rounded-lg border">
         <div className="flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-bold">ภาพรวมการทำงานของคุณ</h2>
-            <p className="text-muted-foreground text-sm">
-              แดชบอร์ดวิเคราะห์ประวัติการเข้า-ออกงาน
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-lg">
+              <BarChart3 className="text-primary h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">แดชบอร์ด</h2>
+              <p className="text-muted-foreground text-sm">
+                ภาพรวมการเข้างานของ {employeeDataForDashboard.display_name}
+              </p>
+            </div>
           </div>
 
           {/* Date Picker */}
@@ -120,7 +125,8 @@ function AttendanceMePage() {
               </PopoverContent>
             </Popover>
             {dateRange && (
-              <button
+              <Button
+                variant={'outline'}
                 onClick={() =>
                   setDateRange({
                     from: new Date(
@@ -134,7 +140,7 @@ function AttendanceMePage() {
                 className="text-muted-foreground hover:text-foreground text-sm"
               >
                 ล้าง
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -145,6 +151,12 @@ function AttendanceMePage() {
             records={dashboardRecords}
             total={total}
             analysis={analysis}
+            onRangeChange={(start, end) =>
+              setDateRange({
+                from: start ?? dateRange?.from,
+                to: end ?? dateRange?.to,
+              })
+            }
           />
         </div>
       </div>

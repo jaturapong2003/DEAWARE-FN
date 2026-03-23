@@ -16,6 +16,7 @@ import {
   LogOut,
   ImageIcon,
 } from 'lucide-react';
+import { useEmployeeAnalysis } from '@/hooks/useEmployeeAnalysis';
 import {
   getAttendanceImageUrls,
   FULL_HOURS,
@@ -54,6 +55,7 @@ interface DashboardIdProps {
   records: AttendanceRecord[];
   total: number;
   analysis?: EmployeeAnalysisResponse['data'] | null;
+  onRangeChange?: (start?: Date, end?: Date) => void;
 }
 
 // ============ Device Helpers ============
@@ -152,32 +154,33 @@ const buildMonthlyGradeData = (records: AttendanceRecord[]) => {
     });
 };
 
-/** คำนวณชั่วโมงทำงานจาก check_in → check_out */
-// attendance hours helpers moved to src/lib/attendance.ts
-
-// attendance image helpers moved to src/lib/attendance.ts
-
 // ============ Data processors ============
+const getXAxisMonthLabel = (date: Date) =>
+  date.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
+const getXAxisDayLabel = (date: Date) =>
+  date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
 
-/** สร้างข้อมูล Bar Chart รายวัน — แสดงชั่วโมงทำงาน */
-const buildBarData = (records: AttendanceRecord[]) => {
-  const grouped = new Map<string, number>();
+const buildBarData = (records: AttendanceRecord[], range: string = '1m') => {
+  const grouped = new Map<string, { name: string; total: number }>();
 
   records.forEach((r) => {
     if (!r.check_in) return;
     const date = new Date(r.check_in);
     if (isNaN(date.getTime())) return;
 
-    const key = date.toLocaleDateString('th-TH', {
-      day: 'numeric',
-      month: 'short',
-    });
+    // สำหรับช่วง 1 ปี ให้ group ตามเดือน มิฉะนั้น group ตามวัน
+    const key =
+      range === '1y' ? getMonthKey(date) : date.toISOString().slice(0, 10); // YYYY-MM-DD
 
-    const hours = calcHours(r);
-    grouped.set(key, (grouped.get(key) ?? 0) + hours);
+    const label =
+      range === '1y' ? getXAxisMonthLabel(date) : getXAxisDayLabel(date);
+
+    const entry = grouped.get(key) ?? { name: label, total: 0 };
+    entry.total += calcHours(r);
+    grouped.set(key, entry);
   });
 
-  return Array.from(grouped.entries()).map(([name, totalHrs]) => {
+  return Array.from(grouped.values()).map(({ name, total: totalHrs }) => {
     const normal = Math.min(totalHrs, FULL_HOURS); // สีเขียว — max 9 ชม.
     const overtime = totalHrs > FULL_HOURS ? totalHrs - FULL_HOURS : 0; // สีเหลือง — เกิน 9
     return {
@@ -320,52 +323,128 @@ const CustomPieTooltip = ({
 
 // ============ Main Component ============
 
-function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
+function DashboardId({
+  employee,
+  records,
+  total,
+  analysis,
+  onRangeChange,
+}: DashboardIdProps) {
   // Pagination สำหรับชั่วโมงทำงานรายวัน
   const [dailyPage, setDailyPage] = useState(1);
   const [dailyLimit, setDailyLimit] = useState(10);
 
+  // ฟิลเตอร์ช่วงเวลา (1 เดือน / 3 เดือน / 6 เดือน / 1 ปี)
+  const [range, setRange] = useState<'1m' | '3m' | '6m' | '1y'>('1m');
+
+  const getStartDateForRange = (r: string) => {
+    const now = new Date();
+    switch (r) {
+      case '1m':
+        return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      case '3m':
+        return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+      case '6m':
+        return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+      case '1y':
+        return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      default:
+        return new Date(0);
+    }
+  };
+
+  // records ที่ถูกกรองตามช่วงเวลา
+  const effectiveRecords = React.useMemo(() => {
+    const start = getStartDateForRange(range);
+    return records.filter((r) => {
+      if (!r.check_in) return false;
+      const d = new Date(r.check_in);
+      if (isNaN(d.getTime())) return false;
+      return d >= start;
+    });
+  }, [records, range]);
+
+  // ดึงข้อมูล analysis จาก API ตามช่วงเวลา (ถ้ามี employee)
+  const { analysis: rangedAnalysis } = useEmployeeAnalysis(
+    employee?.user_id,
+    getStartDateForRange(range),
+    new Date()
+  );
+
+  const usedAnalysis = rangedAnalysis ?? analysis;
+
+  // กรอง chart_data จาก analysis ที่ใช้ (ถ้ามี)
+  const filteredChartData = React.useMemo(() => {
+    if (!Array.isArray(usedAnalysis?.chart_data)) return null;
+    const start = getStartDateForRange(range);
+    return usedAnalysis!.chart_data.filter((d) => new Date(d.date) >= start);
+  }, [usedAnalysis, range]);
+
+  // เมื่อผู้ใช้เลือกช่วงเวลา ให้ส่ง callback เพื่ออัพเดต calendar ที่หน้า parent
+  const handleRangeChange = (r: '1m' | '3m' | '6m' | '1y') => {
+    setRange(r);
+    const start = getStartDateForRange(r);
+    const end = new Date();
+    if (typeof onRangeChange === 'function') {
+      onRangeChange(start, end);
+    }
+  };
+
   // รีเซ็ตหน้าเมื่อข้อมูลหลักเปลี่ยน (เช่น เปลี่ยนฟิลเตอร์วันที่)
   React.useEffect(() => {
     setDailyPage(1);
-  }, [records, analysis]);
+  }, [records, usedAnalysis]);
 
   // ใช้ useMemo เพื่อประสิทธิภาพเมื่อข้อมูลมีปริมาณมาก (สูงสุด 400 รายการ)
   const barData = React.useMemo(() => {
-    if (Array.isArray(analysis?.chart_data)) {
-      return analysis.chart_data.map((d) => {
+    if (Array.isArray(filteredChartData)) {
+      // Aggregate based on range: month buckets for 1y, else day buckets
+      const grouped = new Map<string, { name: string; total: number }>();
+      filteredChartData.forEach((d) => {
         const dateObj = new Date(d.date);
-        const name = dateObj.toLocaleDateString('th-TH', {
-          day: 'numeric',
-          month: 'short',
-        });
-        const normal = Math.min(d.hours, FULL_HOURS);
-        const overtime = d.hours > FULL_HOURS ? d.hours - FULL_HOURS : 0;
+        if (isNaN(dateObj.getTime())) return;
+        const key =
+          range === '1y'
+            ? getMonthKey(dateObj)
+            : dateObj.toISOString().slice(0, 10);
+        const name =
+          range === '1y'
+            ? getXAxisMonthLabel(dateObj)
+            : getXAxisDayLabel(dateObj);
+        const entry = grouped.get(key) ?? { name, total: 0 };
+        entry.total += d.hours;
+        grouped.set(key, entry);
+      });
+
+      return Array.from(grouped.values()).map(({ name, total: totalHrs }) => {
+        const normal = Math.min(totalHrs, FULL_HOURS);
+        const overtime = totalHrs > FULL_HOURS ? totalHrs - FULL_HOURS : 0;
         return {
           name,
           normal: Math.floor(normal * 100) / 100,
           overtime: Math.floor(overtime * 100) / 100,
-          total: d.hours,
-          isFull: d.status,
+          total: totalHrs,
+          isFull: totalHrs >= FULL_HOURS,
         };
       });
     }
-    return buildBarData(records);
-  }, [records, analysis]);
+
+    return buildBarData(effectiveRecords, range);
+  }, [filteredChartData, effectiveRecords, range]);
 
   const monthlyGrades = React.useMemo(
-    () => buildMonthlyGradeData(records),
-    [records]
+    () => buildMonthlyGradeData(effectiveRecords),
+    [effectiveRecords]
   );
   const checkedInCount = React.useMemo(
-    () => records.filter((r) => !!r.check_in).length,
-    [records]
+    () => effectiveRecords.filter((r) => !!r.check_in).length,
+    [effectiveRecords]
   );
 
   // เลือกเดือนแรกที่มีข้อมูล
   const selectedMonth = monthlyGrades[0];
   const selectedMonthGrade =
-    analysis?.summary?.performance_grade || selectedMonth?.grade;
+    usedAnalysis?.summary?.performance_grade || selectedMonth?.grade;
   const selectedMonthGradeStyle = gradeColor(selectedMonthGrade);
 
   const {
@@ -376,52 +455,22 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
     avgWorkHours,
     diffHours,
   } = React.useMemo(() => {
-    // 1. ถ้ามีข้อมูลจาก analysis summary (แม่นยำที่สุดจาก backend)
-    if (analysis?.summary) {
-      const summary = analysis.summary;
-      const f = summary.success_days_count || 0;
-      const nf = summary.partial_days_count || 0;
-      const totalHrs = summary.total_work_minutes / 60;
-      const diffHrs = summary.total_excess_minutes / 60;
-      const avgHrs = summary.avg_hours_per_day || 0;
-
-      const pie = [
-        {
-          name: 'ครบ 9 ชม.',
-          value: f,
-          color: '#22c55e',
-          total: f + nf,
-        },
-        {
-          name: 'ไม่ครบ 9 ชม.',
-          value: nf,
-          color: '#f97316',
-          total: f + nf,
-        },
-      ].filter((d) => d.value > 0);
-
-      return {
-        pieDataWithTotal: pie,
-        fullCount: f,
-        notFullCount: nf,
-        totalWorkHours: totalHrs,
-        avgWorkHours: avgHrs,
-        diffHours: diffHrs,
-      };
-    }
-
-    // 2. ถ้าไม่มี analysis (Fallback ใช้คำนวณจาก records ในเครื่อง)
+    // คำนวณทั้งหมดจาก records ที่ถูกกรองตามช่วงเวลา (effectiveRecords)
     const pieD = selectedMonth
-      ? buildMonthlyDetailPieData(records, selectedMonth.monthKey)
+      ? buildMonthlyDetailPieData(effectiveRecords, selectedMonth.monthKey)
       : [];
     const totalP = pieD.reduce((sum, d) => sum + d.value, 0);
     const pieWithTotal = pieD.map((d) => ({ ...d, total: totalP }));
 
-    const f = records.filter(isFullHours).length;
-    const nf = records.filter((r) => r.check_in && !isFullHours(r)).length;
-    const tHrs = records.reduce((sum, r) => sum + calcHours(r), 0);
-    const avgHrs = records.length > 0 ? tHrs / records.length : 0;
-    const expectedT = records.filter((r) => r.check_in).length * FULL_HOURS;
+    const f = effectiveRecords.filter(isFullHours).length;
+    const nf = effectiveRecords.filter(
+      (r) => r.check_in && !isFullHours(r)
+    ).length;
+    const tHrs = effectiveRecords.reduce((sum, r) => sum + calcHours(r), 0);
+    const avgHrs =
+      effectiveRecords.length > 0 ? tHrs / effectiveRecords.length : 0;
+    const expectedT =
+      effectiveRecords.filter((r) => r.check_in).length * FULL_HOURS;
     const dHrs = tHrs - expectedT;
 
     return {
@@ -432,16 +481,16 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
       avgWorkHours: avgHrs,
       diffHours: dHrs,
     };
-  }, [analysis, records, selectedMonth]);
+  }, [effectiveRecords, selectedMonth]);
 
-  const successRateLabel = analysis?.summary
+  const successRateLabel = usedAnalysis?.summary
     ? `${((fullCount / (fullCount + notFullCount || 1)) * 100).toFixed(0)}% ของวันที่มีบันทึก`
     : `${checkedInCount > 0 ? ((fullCount / checkedInCount) * 100).toFixed(0) : 0}% ของทั้งหมด`;
 
   const groupedList = React.useMemo(() => {
     if (!selectedMonth?.monthKey) return [];
 
-    const activeRecords = records.filter((r) => {
+    const activeRecords = effectiveRecords.filter((r) => {
       if (!r.check_in) return false;
       const date = new Date(r.check_in);
       if (isNaN(date.getTime())) return false;
@@ -471,7 +520,7 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
     });
 
     return Array.from(grouped.entries());
-  }, [records, selectedMonth]);
+  }, [effectiveRecords, selectedMonth]);
 
   const totalDailyPages = Math.ceil(groupedList.length / dailyLimit);
   const paginatedList = React.useMemo(
@@ -482,18 +531,54 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-card rounded-lg border p-5">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-lg">
-            <BarChart3 className="text-primary h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold">แดชบอร์ด</h2>
-            <p className="text-muted-foreground text-sm">
-              ภาพรวมการเข้างานของ {employee.display_name}
-            </p>
-          </div>
+      {/* Time range filter buttons */}
+      <div className="mt-3 flex items-center gap-3">
+        <span className="text-muted-foreground text-sm">ช่วงเวลา:</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleRangeChange('1m')}
+            className={`rounded-md border px-3 py-1 text-sm transition-colors ${
+              range === '1m'
+                ? 'bg-primary/10 border-primary text-primary'
+                : 'bg-muted/10 text-muted-foreground hover:bg-muted/20 border-transparent'
+            }`}
+          >
+            1 เดือน
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRangeChange('3m')}
+            className={`rounded-md border px-3 py-1 text-sm transition-colors ${
+              range === '3m'
+                ? 'bg-primary/10 border-primary text-primary'
+                : 'bg-muted/10 text-muted-foreground hover:bg-muted/20 border-transparent'
+            }`}
+          >
+            3 เดือน
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRangeChange('6m')}
+            className={`rounded-md border px-3 py-1 text-sm transition-colors ${
+              range === '6m'
+                ? 'bg-primary/10 border-primary text-primary'
+                : 'bg-muted/10 text-muted-foreground hover:bg-muted/20 border-transparent'
+            }`}
+          >
+            6 เดือน
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRangeChange('1y')}
+            className={`rounded-md border px-3 py-1 text-sm transition-colors ${
+              range === '1y'
+                ? 'bg-primary/10 border-primary text-primary'
+                : 'bg-muted/10 text-muted-foreground hover:bg-muted/20 border-transparent'
+            }`}
+          >
+            1 ปี
+          </button>
         </div>
       </div>
 
@@ -503,7 +588,9 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
           icon={<LogIn className="h-5 w-5" />}
           label="บันทึกทั้งหมด"
           value={`${fullCount + notFullCount} วัน`}
-          subValue={analysis?.summary ? `ในเดือนปัจจุบัน` : `จากรายการทั้งหมด`}
+          subValue={
+            usedAnalysis?.summary ? `ในเดือนปัจจุบัน` : `จากรายการทั้งหมด`
+          }
           color="text-indigo-600"
         />
         <StatCard
@@ -511,7 +598,7 @@ function DashboardId({ employee, records, total, analysis }: DashboardIdProps) {
           label="ชั่วโมงทำงานรวม"
           value={fmtHours(totalWorkHours)}
           subValue={
-            analysis?.summary
+            usedAnalysis?.summary
               ? `รวมเวลาทั้งหมดในระบบ`
               : `จาก ${total} ครั้งที่บันทึก`
           }
