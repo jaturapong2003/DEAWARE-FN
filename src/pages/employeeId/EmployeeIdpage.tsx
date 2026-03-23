@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
 import useEmployeeById from '@/hooks/useEmployeeById';
@@ -84,6 +84,17 @@ function EmployeeIdPage() {
   const handleGoBack = () => {
     navigate('/employees');
   };
+
+  // Stable callback for DashboardId to avoid unnecessary re-renders
+  const handleDashboardRangeChange = useCallback(
+    (start?: Date, end?: Date) => {
+      setDateRange((prev) => ({
+        from: start ?? prev?.from,
+        to: end ?? prev?.to,
+      }));
+    },
+    []
+  );
 
   const { keycloak } = useKeycloak();
 
@@ -310,12 +321,7 @@ function EmployeeIdPage() {
             records={dashboardRecords}
             total={total}
             analysis={analysis}
-            onRangeChange={(start, end) =>
-              setDateRange({
-                from: start ?? dateRange?.from,
-                to: end ?? dateRange?.to,
-              })
-            }
+            onRangeChange={handleDashboardRangeChange}
           />
         </div>
       </div>

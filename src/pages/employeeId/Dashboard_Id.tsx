@@ -1,6 +1,6 @@
 import type { AttendanceRecord } from '@/@types/Attendance';
 import type { EmployeesList } from '@/@types/Employees';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, formatTime } from '@/lib/date';
 import type { EmployeeAnalysisResponse } from '@/@types/Attendance';
@@ -246,13 +246,13 @@ const buildMonthlyDetailPieData = (
 // ============ Sub Components ============
 
 /** Stat Card */
-const StatCard: React.FC<{
+const StatCard = React.memo<{
   icon: React.ReactNode;
   label: string;
   value: string | number;
   subValue?: string;
   color?: string;
-}> = ({ icon, label, value, subValue, color = 'text-primary' }) => (
+}>(({ icon, label, value, subValue, color = 'text-primary' }) => (
   <div className="bg-card group hover:border-primary/30 rounded-lg border p-4 transition-all duration-200 hover:shadow-sm">
     <div className="flex items-center gap-3">
       <div
@@ -269,7 +269,8 @@ const StatCard: React.FC<{
       </div>
     </div>
   </div>
-);
+));
+StatCard.displayName = 'StatCard';
 
 /** Custom Tooltip สำหรับ Bar Chart */
 const CustomBarTooltip = ({
@@ -341,6 +342,23 @@ const CustomPieTooltip = ({
 
 // ============ Main Component ============
 
+/** คำนวณวันเริ่มต้นของแต่ละช่วงเวลา */
+const getStartDateForRange = (r: string): Date => {
+  const now = new Date();
+  switch (r) {
+    case '1m':
+      return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    case '3m':
+      return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+    case '6m':
+      return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+    case '1y':
+      return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    default:
+      return new Date(0);
+  }
+};
+
 function DashboardId({
   employee,
   records,
@@ -355,37 +373,23 @@ function DashboardId({
   // ฟิลเตอร์ช่วงเวลา (1 เดือน / 3 เดือน / 6 เดือน / 1 ปี)
   const [range, setRange] = useState<'1m' | '3m' | '6m' | '1y'>('1m');
 
-  const getStartDateForRange = (r: string) => {
-    const now = new Date();
-    switch (r) {
-      case '1m':
-        return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-      case '3m':
-        return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-      case '6m':
-        return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-      case '1y':
-        return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-      default:
-        return new Date(0);
-    }
-  };
+  // คำนวณวันเริ่มต้นครั้งเดียวต่อการเปลี่ยนแปลง range
+  const startDate = React.useMemo(() => getStartDateForRange(range), [range]);
 
   // records ที่ถูกกรองตามช่วงเวลา
   const effectiveRecords = React.useMemo(() => {
-    const start = getStartDateForRange(range);
     return records.filter((r) => {
       if (!r.check_in) return false;
       const d = new Date(r.check_in);
       if (isNaN(d.getTime())) return false;
-      return d >= start;
+      return d >= startDate;
     });
-  }, [records, range]);
+  }, [records, startDate]);
 
   // ดึงข้อมูล analysis จาก API ตามช่วงเวลา (ถ้ามี employee)
   const { analysis: rangedAnalysis } = useEmployeeAnalysis(
     onRangeChange ? undefined : employee?.user_id,
-    getStartDateForRange(range),
+    startDate,
     new Date()
   );
 
@@ -394,19 +398,23 @@ function DashboardId({
   // กรอง chart_data จาก analysis ที่ใช้ (ถ้ามี)
   const filteredChartData = React.useMemo(() => {
     if (!Array.isArray(usedAnalysis?.chart_data)) return null;
-    const start = getStartDateForRange(range);
-    return usedAnalysis!.chart_data.filter((d) => new Date(d.date) >= start);
-  }, [usedAnalysis, range]);
+    return usedAnalysis!.chart_data.filter((d) => new Date(d.date) >= startDate);
+  }, [usedAnalysis, startDate]);
 
   // เมื่อผู้ใช้เลือกช่วงเวลา ให้ส่ง callback เพื่ออัพเดต calendar ที่หน้า parent
-  const handleRangeChange = (r: '1m' | '3m' | '6m' | '1y') => {
-    setRange(r);
-    const start = getStartDateForRange(r);
-    const end = new Date();
-    if (typeof onRangeChange === 'function') {
-      onRangeChange(start, end);
-    }
-  };
+  const handleRangeChange = useCallback(
+    (r: '1m' | '3m' | '6m' | '1y') => {
+      setRange(r);
+      // คำนวณวันเริ่มต้นของ range ใหม่ (r) โดยตรง เพื่อส่งให้ parent ทันที
+      // ไม่ใช้ startDate เพราะยังเป็นค่าของ range เดิมก่อน setState จะมีผล
+      const start = getStartDateForRange(r);
+      const end = new Date();
+      if (typeof onRangeChange === 'function') {
+        onRangeChange(start, end);
+      }
+    },
+    [onRangeChange]
+  );
 
   // รีเซ็ตหน้าเมื่อข้อมูลหลักเปลี่ยน (เช่น เปลี่ยนฟิลเตอร์วันที่)
   React.useEffect(() => {
@@ -1256,4 +1264,4 @@ function DashboardId({
   );
 }
 
-export default DashboardId;
+export default React.memo(DashboardId);
