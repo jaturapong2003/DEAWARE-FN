@@ -22,12 +22,6 @@ export interface AttendanceResponse {
   total_pages: number;
 }
 
-// สำหรับการส่งข้อมูล check-in/check-out
-export interface AttendanceRequest {
-  device: 'web_app';
-  confidence: number;
-}
-
 export interface ImageAttendance {
   ID?: string;
   ImageURL?: string;
@@ -53,6 +47,7 @@ export interface AttendanceSingleResponse {
   check_in_confidence: number | null;
   check_out_confidence: number | null;
 }
+
 // สำหรับการตอบกลับจากการวิเคราะห์ข้อมูลเข้างานของพนักงานรายบุคคล
 export interface EmployeeAnalysisResponse {
   data: {

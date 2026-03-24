@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useKeycloak } from '@react-keycloak/web';
 import { LogOutIcon } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   Sidebar,
   SidebarContent,
@@ -18,11 +19,22 @@ import {
 } from '@/components/ui/sidebar';
 import DEAWARE from '@/assets/deaware.webp';
 import { navigationItems } from '@/lib/itemMenu';
-import SettingsDialog from './sittings';
+import SettingContent from './SettingContent';
 
 const AppSidebar: React.FC = () => {
   const location = useLocation();
   const { keycloak } = useKeycloak();
+<<<<<<< HEAD
+=======
+  const [openSetting, setOpenSetting] = useState(false);
+  const user = useAuthStore((state) => state.user);
+
+  const isAdmin =
+    keycloak.hasRealmRole('admin') ||
+    keycloak.hasResourceRole('admin', import.meta.env.VITE_CLIENT_ID) ||
+    keycloak.hasResourceRole('admin', 'DEAWARE') ||
+    keycloak.hasResourceRole('admin', 'DFAWARF');
+>>>>>>> 298e0c96ada5aaf2a566a92300dda2917f2533b4
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -51,22 +63,9 @@ const AppSidebar: React.FC = () => {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => {
-                // ถ้าเมนูต้องการสิทธิ์ admin ให้เช็คสิทธิ์ก่อน
-                const isAdmin =
-                  keycloak.hasRealmRole('admin') ||
-                  keycloak.hasResourceRole(
-                    'admin',
-                    import.meta.env.VITE_CLIENT_ID
-                  ) ||
-                  keycloak.hasResourceRole('admin', 'DEAWARE') || // กันเหนียวเผื่อชื่อ client ไม่ตรง
-                  keycloak.hasResourceRole('admin', 'DFAWARF');
-
-                if (item.role === 'admin' && !isAdmin) {
-                  return null;
-                }
-
-                return (
+              {navigationItems
+                .filter((item) => item.role !== 'admin')
+                .map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
@@ -80,12 +79,12 @@ const AppSidebar: React.FC = () => {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                );
-              })}
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
+<<<<<<< HEAD
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">
             ตั้งค่า
@@ -98,8 +97,76 @@ const AppSidebar: React.FC = () => {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+=======
+        {/* Admin section separated */}
+        {isAdmin && navigationItems.some((it) => it.role === 'admin') && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">
+              ผู้ดูแล
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navigationItems
+                  .filter((item) => item.role === 'admin')
+                  .map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.url)}
+                        tooltip={item.title}
+                        className="group hover:bg-sidebar-accent/80 data-[active=true]:from-primary/20 data-[active=true]:to-primary/5 data-[active=true]:text-primary transition-all data-[active=true]:bg-linear-to-r data-[active=true]:shadow-sm"
+                      >
+                        <Link to={item.url}>
+                          <item.icon className="transition-transform group-hover:scale-110" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+>>>>>>> 298e0c96ada5aaf2a566a92300dda2917f2533b4
       </SidebarContent>
       <SidebarFooter className="border-sidebar-border from-sidebar/50 border-t bg-linear-to-t to-transparent">
+        {/* Profile summary above logout */}
+        <div className="px-3 py-3">
+          <div
+            className="hover:bg-sidebar-accent/10 flex cursor-pointer items-center gap-3 rounded-md p-2"
+            onClick={() => setOpenSetting(true)}
+          >
+            <Avatar className="h-10 w-10">
+              {user?.url_image ? (
+                <AvatarImage
+                  src={user.url_image}
+                  alt={user?.display_name || user?.username}
+                />
+              ) : (
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {(user?.display_name || user?.username || 'ผู้ใช้')
+                    .split(' ')
+                    .map((s) => s[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </AvatarFallback>
+              )}
+            </Avatar>
+
+            <div className="flex flex-col truncate">
+              <span className="truncate text-sm font-medium">
+                {user?.display_name || user?.username || 'ไม่ระบุชื่อ'}
+              </span>
+              {user?.email && (
+                <span className="text-muted-foreground truncate text-xs">
+                  {user.email}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -117,6 +184,13 @@ const AppSidebar: React.FC = () => {
         </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
+<<<<<<< HEAD
+=======
+      <SettingContent
+        open={openSetting}
+        onClose={() => setOpenSetting(false)}
+      />
+>>>>>>> 298e0c96ada5aaf2a566a92300dda2917f2533b4
     </Sidebar>
   );
 };

@@ -1,16 +1,15 @@
 import type { AttendanceRecord } from '@/@types/Attendance';
 import {
-  Ban,
   Calendar,
-  Camera,
   CheckCircle2,
   Clock,
   ImageIcon,
   LogIn,
   LogOut,
-  Monitor,
   XCircle,
 } from 'lucide-react';
+import { getAttendanceImageUrls } from '@/lib/attendance';
+import AttendanceDeviceCard from '@/components/common/AttendanceDeviceCard';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, formatTime } from '@/lib/date';
 import {
@@ -21,100 +20,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-// ICON DEVICE
-const DeviceIcon: React.FC<{ device: string | null }> = ({ device }) => {
-  switch (device) {
-    case 'web_app':
-      return <Monitor className="h-4 w-4" />;
-    case 'cam-01':
-      return <Camera className="h-4 w-4" />;
-    default:
-      return <Ban className="h-4 w-4" />;
-  }
-};
-
-// DEVICE NAME
-const getDeviceName = (device: string | null): string => {
-  switch (device) {
-    case 'web_app':
-      return 'เว็บแอพ';
-    case 'cam-01':
-      return 'กล้อง 1';
-    default:
-      return 'ไม่ระบุ';
-  }
-};
-
-// CONFIDENCE BADGE COLOR
-const getConfidenceColor = (confidence: number | null): string => {
-  if (!confidence) {
-    return 'text-muted-foreground';
-  } else if (confidence >= 0.9) {
-    return 'text-green-600';
-  } else if (confidence >= 0.7) {
-    return 'text-yellow-600';
-  } else {
-    return 'text-orange-600';
-  }
-};
-
-const normalizeImageType = (type: string | undefined): string => {
-  return (type || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, '_');
-};
-
-const isCheckInImageType = (type: string): boolean => {
-  const normalized = normalizeImageType(type);
-  return (
-    normalized === 'check_in' ||
-    normalized === 'clock_in' ||
-    normalized === 'in' ||
-    normalized === 'entry'
-  );
-};
-
-const isCheckOutImageType = (type: string): boolean => {
-  const normalized = normalizeImageType(type);
-  return (
-    normalized === 'check_out' ||
-    normalized === 'clock_out' ||
-    normalized === 'out' ||
-    normalized === 'exit'
-  );
-};
-
-const getAttendanceImageUrls = (record: AttendanceRecord) => {
-  const images = [...(record.ImageAttendance ?? record.images ?? [])].sort(
-    (a, b) =>
-      new Date(a.CreatedAt ?? a.created_at ?? '').getTime() -
-      new Date(b.CreatedAt ?? b.created_at ?? '').getTime()
-  );
-
-  const checkInImage = images.find((img) =>
-    isCheckInImageType(img.ImageType ?? img.image_type ?? '')
-  );
-  const checkOutImage = images.find((img) =>
-    isCheckOutImageType(img.ImageType ?? img.image_type ?? '')
-  );
-
-  return {
-    checkInImageUrl:
-      checkInImage?.ImageURL ??
-      checkInImage?.image_url ??
-      images[0]?.ImageURL ??
-      images[0]?.image_url ??
-      null,
-    checkOutImageUrl:
-      checkOutImage?.ImageURL ??
-      checkOutImage?.image_url ??
-      images[images.length > 1 ? images.length - 1 : 0]?.ImageURL ??
-      images[images.length > 1 ? images.length - 1 : 0]?.image_url ??
-      null,
-  };
-};
 
 // Card attendance
 const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
@@ -161,26 +66,10 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                   {formatTime(record.check_in)}
                 </span>
               </div>
-              <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
-                <div className="flex items-center gap-2">
-                  <DeviceIcon device={record.check_in_device} />
-                  <span className="text-xs font-medium">
-                    {getDeviceName(record.check_in_device)}
-                  </span>
-                </div>
-                {record.check_in_confidence !== null && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-xs">
-                      ความแม่นยำ:
-                    </span>
-                    <span
-                      className={`text-xs font-bold ${getConfidenceColor(record.check_in_confidence)}`}
-                    >
-                      {(record.check_in_confidence * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                )}
-              </div>
+              <AttendanceDeviceCard
+                device={record.check_in_device}
+                confidence={record.check_in_confidence}
+              />
             </div>
 
             {/* เวลาออกงาน */}
@@ -196,32 +85,12 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                 </span>
               </div>
               {record.check_out ? (
-                <div className="bg-muted/30 space-y-1.5 rounded-md p-2">
-                  <div className="flex items-center gap-2">
-                    <DeviceIcon device={record.check_out_device} />
-                    <span className="text-xs font-medium">
-                      {getDeviceName(record.check_out_device)}
-                    </span>
-                  </div>
-                  {record.check_out_confidence !== null && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground text-xs">
-                        ความแม่นยำ:
-                      </span>
-                      <span
-                        className={`text-xs font-bold ${getConfidenceColor(record.check_out_confidence)}`}
-                      >
-                        {(record.check_out_confidence * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <AttendanceDeviceCard
+                  device={record.check_out_device}
+                  confidence={record.check_out_confidence}
+                />
               ) : (
-                <div className="bg-muted/30 rounded-md p-2">
-                  <span className="text-muted-foreground text-xs">
-                    ยังไม่ได้ออกงาน
-                  </span>
-                </div>
+                <AttendanceDeviceCard emptyText="ยังไม่ได้ออกงาน" />
               )}
             </div>
           </div>

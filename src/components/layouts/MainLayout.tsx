@@ -28,14 +28,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     <SidebarProvider>
       <AppSidebar />
 
-      <SidebarInset className="relative z-0">
-        {/* Subtle Brand Background Glow */}
-        <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/[0.06] via-background to-background dark:from-primary/[0.12]" />
-
-        <header className="shrink-0 border-b border-border bg-background/80 backdrop-blur-sm">
-          <div className="h-0.5 bg-gradient-to-r from-primary/80 via-primary/40 to-transparent" />
-          <div className="flex h-14 items-center gap-2 px-4">
-          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground transition-colors" />
+      {/* make SidebarInset the scroll container so header (inside it) can stick */}
+      <SidebarInset className="flex h-svh flex-col overflow-auto">
+        <header className="bg-background sticky top-0  flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex flex-1 items-center justify-between">
             <h1 className="text-sm font-semibold text-foreground">
@@ -65,6 +61,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </div>
         </header>
 
+        {/* content fills remaining space and scrolls inside SidebarInset */}
         <div className="flex flex-1 flex-col gap-4 p-2">{children}</div>
       </SidebarInset>
     </SidebarProvider>

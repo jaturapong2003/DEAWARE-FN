@@ -12,3 +12,13 @@ export interface AccountInfo {
   url_image: string | null;
   record: Record<string, unknown>;
 }
+
+export interface CreateAccount {
+  fname: string;
+  lname?: string;
+  username: string;
+  email?: string;
+  password: string;
+  phone?: string;
+  position?: string;
+}
