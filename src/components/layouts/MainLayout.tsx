@@ -30,7 +30,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
       {/* make SidebarInset the scroll container so header (inside it) can stick */}
       <SidebarInset className="flex h-svh flex-col overflow-auto">
-        <header className="bg-background sticky top-0  flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <header className="bg-foreground/5 sticky top-0  flex h-16 shrink-0 backdrop-blur-3xl items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex flex-1 items-center justify-between">
@@ -41,10 +41,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
             {/* ปุ่มสลับ Dark/Light Mode */}
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
               onClick={toggleTheme}
-              className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+              className="cursor-pointer h-8 w-8 rounded-lg text-muted-foreground bg-foreground/5 hover:bg-foreground/10"
               title={
                 theme === 'dark'
                   ? 'เปลี่ยนเป็น Light Mode'

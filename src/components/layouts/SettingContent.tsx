@@ -38,8 +38,10 @@ export default function SettingContent({ open, onClose }: Props) {
   const [active, setActive] = useState<'profile' | 'ai' | 'update'>('profile');
   const [profileFiles, setProfileFiles] = useState<File[]>([]);
   const [faceFiles, setFaceFiles] = useState<File[]>([]);
+  const [faceEmbeddingCount, setFaceEmbeddingCount] = useState<number>(0);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [position, setPosition] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
   const [fname, setFname] = useState<string>('Somchai');
   const [lname, setLname] = useState<string>('Sukjai');
   const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(false);
@@ -61,12 +63,16 @@ export default function SettingContent({ open, onClose }: Props) {
           lname?: string;
           phone_number?: string;
           position?: string;
+          email?: string;
+          face_embedding_count?: number;
         };
 
         setFname(data.fname || 'Somchai');
         setLname(data.lname || 'Sukjai');
         setPhoneNumber(data.phone_number || '');
         setPosition(data.position || '');
+        setEmail(data.email ?? '');
+        setFaceEmbeddingCount(data.face_embedding_count ?? 0);
       } catch {
         toast.error('ไม่สามารถโหลดข้อมูลผู้ใช้งานได้ กรุณาลองใหม่อีกครั้ง');
       } finally {
@@ -86,7 +92,6 @@ export default function SettingContent({ open, onClose }: Props) {
   const clearProfile = () => setProfileFiles([]);
   const clearFace = () => setFaceFiles([]);
 
-  // derive object URLs for previews and revoke them on change
   const profilePreviews = useMemo(
     () => profileFiles.map((f) => URL.createObjectURL(f)),
     [profileFiles]
@@ -153,9 +158,16 @@ export default function SettingContent({ open, onClose }: Props) {
         body: formData,
       })) as { message?: string };
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setFaceFiles([]);
       toast.success(data?.message || 'อัปโหลดรูปใบหน้าสำเร็จ');
+
+      const response = await apiClient.get('/employee/me');
+      const backendData = response.data as { face_embedding_count?: number };
+      setFaceEmbeddingCount(backendData.face_embedding_count ?? 0);
+
+      const setAccountInfo = useAuthStore.getState().setAccountInfo;
+      setAccountInfo(response.data);
     },
     onError: (err: unknown) => {
       const message =
@@ -171,6 +183,7 @@ export default function SettingContent({ open, onClose }: Props) {
         body: JSON.stringify({
           fname,
           lname,
+          email,
           phone_number: phoneNumber,
           position,
         }),
@@ -221,18 +234,16 @@ export default function SettingContent({ open, onClose }: Props) {
   ];
 
   return (
-    <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 duration-200 sm:p-6">
+    <div className="animate-in fade-in fixed inset-0 z-30 flex items-center justify-center p-4 duration-200 sm:p-6">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity"
+        className="absolute inset-0 z-20 bg-black/60 backdrop-blur-md transition-opacity"
         onClick={() => {
           if (!isAnyLoading) onClose();
         }}
       />
 
-      <div className="bg-background relative z-10 mx-auto flex h-[85vh] w-full max-w-5xl scale-100 transform flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl transition-all sm:flex-row">
-        {isAnyLoading && (
-          <LoadingPage message="กรุณารอสักครู่..." fullScreen />
-        )}
+      <div className="bg-background relative z-30 mx-auto flex h-[85vh] w-full max-w-5xl scale-100 transform flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl transition-all sm:flex-row">
+        {isAnyLoading && <LoadingPage message="กรุณารอสักครู่..." fullScreen />}
 
         <div className="shrink-0 border-b border-white/10 p-6 sm:w-72 sm:border-r sm:border-b-0">
           <div className="mb-8 flex items-center justify-between">
@@ -410,11 +421,18 @@ export default function SettingContent({ open, onClose }: Props) {
 
                 <CardContent className="p-0">
                   {/* ✨ Premium Dropzone (AI Variant using a different subtle color) */}
-                  <div className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-white/15 transition-all hover:border-indigo-500/50 hover:bg-indigo-500/5">
+                  <div
+                    className={`group relative overflow-hidden rounded-2xl border-2 border-dashed transition-all ${
+                      faceEmbeddingCount >= 10
+                        ? 'border-red-500 bg-red-50/20'
+                        : 'border-white/15 hover:border-indigo-500/50 hover:bg-indigo-500/5'
+                    }`}
+                  >
                     <input
                       type="file"
                       accept="image/*"
                       multiple
+                      disabled={faceEmbeddingCount >= 10 || isAnyLoading}
                       onChange={(e) =>
                         setFaceFiles(
                           e.target.files ? Array.from(e.target.files) : []
@@ -465,14 +483,20 @@ export default function SettingContent({ open, onClose }: Props) {
                           </p>
                         </>
                       )}
+                      {faceEmbeddingCount >= 10 && (
+                        <p className="text-xs text-red-500">
+                          ระบบมีรูป AI แล้ว {faceEmbeddingCount} รูป (สูงสุด 10
+                          รูป). กรุณาลบรูปเก่า ก่อนเพิ่มรูปใหม่
+                        </p>
+                      )}
                     </div>
                   </div>
                 </CardContent>
 
-                <CardFooter className="mt-6 flex justify-end px-0!">
-                  <div className="flex gap-2">
+                <CardFooter className="mt-6 flex flex-col gap-2 px-0!">
+                  <div className="flex w-full justify-end gap-2">
                     <Button
-                      variant="secondary"
+                      variant="outline"
                       onClick={() => clearFace()}
                       disabled={faceFiles.length === 0}
                     >
@@ -481,9 +505,17 @@ export default function SettingContent({ open, onClose }: Props) {
 
                     <Button
                       onClick={() => uploadFaceImagesMutation.mutate()}
-                      disabled={isAnyLoading || faceFiles.length === 0}
+                      disabled={
+                        isAnyLoading ||
+                        faceFiles.length === 0 ||
+                        faceEmbeddingCount >= 10
+                      }
                     >
-                      {isPending ? 'กำลังส่งให้ AI...' : 'อัปโหลดให้ AI'}
+                      {faceEmbeddingCount >= 10
+                        ? 'จำนวนรูปเต็มแล้ว'
+                        : isPending
+                          ? 'กำลังส่งให้ AI...'
+                          : 'อัปโหลดให้ AI'}
                     </Button>
                   </div>
                 </CardFooter>
@@ -535,6 +567,17 @@ export default function SettingContent({ open, onClose }: Props) {
 
                       {/* Glassy Input 1 */}
                       <div className="space-y-2">
+                        <Label className="text-sm font-medium">อีเมล</Label>
+                        <Input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="you@example.com"
+                        />
+                      </div>
+
+                      {/* Glassy Input 2 */}
+                      <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-sm font-medium">
                           <Phone size={14} className="text-primary" />{' '}
                           เบอร์โทรศัพท์
@@ -546,7 +589,7 @@ export default function SettingContent({ open, onClose }: Props) {
                         />
                       </div>
 
-                      {/* Glassy Input 2 */}
+                      {/* Glassy Input 3 */}
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-sm font-medium">
                           <Briefcase size={14} className="text-primary" />{' '}

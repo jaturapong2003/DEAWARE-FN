@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { fetchWithAuth } from '@/config/fetctWithAuth';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
 import useEmployeeById from '@/hooks/useEmployeeById';
 import useEmployeeAnalysis from '@/hooks/useEmployeeAnalysis';
@@ -9,6 +12,17 @@ import type { DateRange } from 'react-day-picker';
 import type { EmployeesList } from '@/@types/Employees';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { getInitials } from '@/lib/helper';
 import LoadingPage from '@/components/common/LoadingPage';
 
@@ -80,12 +94,35 @@ function EmployeeIdPage() {
     dateRange?.to ?? dateRange?.from
   );
 
-  // 🔙 ปุ่มกลับ
+  //  ปุ่มกลับ
   const handleGoBack = () => {
     navigate('/employees');
   };
 
   const { keycloak } = useKeycloak();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: async () => {
+      return (await fetchWithAuth<{ message?: string }>(
+        `/api/employee/${employee?.user_id}`,
+        {
+          method: 'DELETE',
+        }
+      )) as { message?: string };
+    },
+    onSuccess: (data) => {
+      toast.success(data?.message || 'ลบพนักงานสำเร็จ');
+      navigate('/employees');
+    },
+    onError: (error: unknown) => {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : 'ลบพนักงานไม่สำเร็จ โปรดลองอีกครั้ง';
+      toast.error(msg);
+    },
+  });
 
   // กำลังโหลดข้อมูลพนักงาน
   if (employeeLoading && keycloak.authenticated) {
@@ -103,7 +140,7 @@ function EmployeeIdPage() {
           <ArrowLeft className="h-4 w-4" />
           <span className="text-sm font-medium">กลับไปหน้ารายชื่อ</span>
         </button>
-        <div className="bg-card rounded-xl border border-border p-12 text-center shadow-sm dark:border-border">
+        <div className="bg-card border-border dark:border-border rounded-xl border p-12 text-center shadow-sm">
           <AlertTriangle className="text-muted-foreground mx-auto h-12 w-12" />
           <h3 className="mt-4 text-lg font-semibold">ไม่พบข้อมูลพนักงาน</h3>
           <p className="text-muted-foreground mt-2 text-sm">
@@ -122,21 +159,21 @@ function EmployeeIdPage() {
 
   return (
     <div className="space-y-2">
-      {/* 🔙 ปุ่มกลับ */}
+      {/*  ปุ่มกลับ */}
       <Button variant={'link'} onClick={handleGoBack}>
         <ArrowLeft className="h-4 w-4" />
         <span className="text-sm font-medium">กลับไปหน้ารายชื่อ</span>
       </Button>
 
-      {/* 👤 Profile Card */}
-      <div className="bg-card overflow-hidden rounded-xl border border-border shadow-sm dark:border-border">
+      {/* Profile Card */}
+      <div className="bg-card border-border dark:border-border overflow-hidden rounded-xl border shadow-sm">
         {/* Header gradient */}
         <div className="from-primary/20 to-primary/5 h-24 bg-linear-to-r sm:h-32" />
 
         <div className="relative px-6 pb-6">
           {/* Avatar */}
           <div className="-mt-12 flex flex-col items-center gap-4 sm:-mt-16 sm:flex-row sm:items-end">
-            <Avatar className="border-background h-24 w-24 border-4 shadow-lg sm:h-32 sm:w-32">
+            <Avatar className="border-background  h-24 w-24 border-4 shadow-lg sm:h-32 sm:w-32">
               {imgReady && employee.url_image && (
                 <AvatarImage
                   src={employee.url_image}
@@ -157,7 +194,52 @@ function EmployeeIdPage() {
                   {employee.position || 'พนักงาน'}
                 </Badge>
               </div>
-              {/* <EmaillDialog employeeId={employee.user_id} /> */}
+              <div className="relative flex items-center gap-2">
+                {deleteEmployeeMutation.status === 'pending' && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20">
+                    <LoadingPage
+                      message="กำลังลบพนักงาน..."
+                      fullScreen={false}
+                    />
+                  </div>
+                )}
+
+                <AlertDialog
+                  open={isDeleteDialogOpen}
+                  onOpenChange={setIsDeleteDialogOpen}
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      disabled={deleteEmployeeMutation.status === 'pending'}
+                    >
+                      ลบพนักงาน
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                    </AlertDialogHeader>
+                    <AlertDialogDescription>
+                      คุณแน่ใจหรือไม่ว่าจะลบพนักงานคนนี้?
+                      การกระทำนี้ไม่สามารถย้อนกลับได้
+                    </AlertDialogDescription>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          deleteEmployeeMutation.mutate();
+                        }}
+                        disabled={deleteEmployeeMutation.status === 'pending'}
+                      >
+                        ยืนยันลบ
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/* <EmaillDialog employeeId={employee.user_id} /> */}
+              </div>
             </div>
           </div>
 
@@ -251,29 +333,29 @@ function EmployeeIdPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="flex h-12 w-full sm:w-auto items-center justify-between gap-3 rounded-xl border-border/60 bg-background/50 px-5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-border hover:bg-accent/50 hover:shadow-md"
+                  className="border-border/60 bg-background/50 hover:border-border hover:bg-accent/50 flex h-12 w-full items-center justify-between gap-3 rounded-xl px-5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-md sm:w-auto"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex rounded-xl bg-primary/10 p-2 text-primary">
+                    <div className="bg-primary/10 text-primary flex rounded-xl p-2">
                       <CalendarDays className="h-5 w-5" />
                     </div>
                     <span className="text-[15px] font-semibold tracking-wide">
-                    {dateRange?.from
-                      ? dateRange.to
-                        ? `${dateRange.from.toLocaleDateString('th-TH', {
-                            day: 'numeric',
-                            month: 'short',
-                          })} - ${dateRange.to.toLocaleDateString('th-TH', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}`
-                        : dateRange.from.toLocaleDateString('th-TH', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })
-                      : 'เลือกช่วงวันที่'}
+                      {dateRange?.from
+                        ? dateRange.to
+                          ? `${dateRange.from.toLocaleDateString('th-TH', {
+                              day: 'numeric',
+                              month: 'short',
+                            })} - ${dateRange.to.toLocaleDateString('th-TH', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}`
+                          : dateRange.from.toLocaleDateString('th-TH', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                        : 'เลือกช่วงวันที่'}
                     </span>
                   </div>
                 </Button>
