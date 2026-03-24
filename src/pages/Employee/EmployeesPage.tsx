@@ -19,7 +19,6 @@ import LoadingPage from '@/components/common/LoadingPage';
 import ErrorPage from '@/components/common/ErrorPage';
 import { useKeycloak } from '@react-keycloak/web';
 import CreateEmployeeDialog from '@/components/common/CreateEmployeeDialog';
-import toast from 'react-hot-toast';
 
 // Employee Card
 const EmployeeCard: React.FC<{ employee: EmployeesList }> = ({ employee }) => {
@@ -144,13 +143,7 @@ function EmployeesPage() {
                 className="h-13 w-full rounded-2xl border py-3.5 pr-4 pl-12 text-sm shadow-inner backdrop-blur-md transition-all outline-none focus:border-[#d1385c]/50 focus:bg-white/5 focus:ring-1 focus:ring-[#d1385c]/50"
               />
             </div>
-            <CreateEmployeeDialog
-              onCreate={(data) =>
-                toast.success(
-                  `สร้าง ${data.display_name || data.user_name} (mock)`
-                )
-              }
-            />
+            <CreateEmployeeDialog />
           </div>
         </div>
       </div>

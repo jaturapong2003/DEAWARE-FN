@@ -15,6 +15,12 @@ import { Field, FieldGroup } from '@/components/ui/field';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlusCircle, User, Mail, Phone, Briefcase, Key } from 'lucide-react';
 import type { CreateAccount } from '@/@types/Account';
+import toast from 'react-hot-toast';
+import {
+  mapCreateAccountToPayload,
+  extractApiErrorMessage,
+  useCreateEmployee,
+} from '@/hooks/useEmployee';
 
 type Props = {
   onCreate?: (data: CreateAccount) => void;
@@ -23,44 +29,72 @@ type Props = {
 export default function CreateEmployeeDialog({ onCreate }: Props) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<CreateAccount>({
-    user_name: '',
-    display_name: '',
+    username: '',
+    fname: '',
+    lname: '',
     email: '',
     password: '',
     phone: '',
     position: '',
   } as CreateAccount);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const { createEmployee, creatingEmployee } = useCreateEmployee();
 
   const handleChange = (k: keyof CreateAccount, v: string) => {
     setForm((s) => ({ ...s, [k]: v }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const resetForm = () => {
+    setForm({
+      fname: '',
+      lname: '',
+      username: '',
+      email: '',
+      password: '',
+      phone: '',
+      position: '',
+    } as CreateAccount);
+    setConfirmPassword('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Basic validation
-    if (!form.user_name?.trim() || !form.password?.trim()) {
-      // lightweight UX: use alert for mockup
-      alert('กรุณากรอก User และรหัสผ่าน');
+
+    if (!form.username?.trim() || !form.password?.trim()) {
+      toast.error('กรุณากรอก User และรหัสผ่าน');
       return;
     }
 
-    // Invoke callback (mock behaviour)
-    onCreate?.(form);
-    setOpen(false);
-    setForm({
-      user_name: '',
-      display_name: '',
-      email: '',
-      password: '',
-    } as CreateAccount);
+    if (form.password.length < 6) {
+      toast.error('รหัสผ่านต้องมากกว่า 6 ตัวอักษร');
+      return;
+    }
 
-    console.log('form', form);
+    if (form.password !== confirmPassword) {
+      toast.error('รหัสผ่านไม่ตรงกัน');
+      return;
+    }
+
+    try {
+      const payload = mapCreateAccountToPayload(form);
+      await createEmployee(payload);
+      toast.success('สร้างพนักงานสำเร็จ');
+      onCreate?.(form);
+      setOpen(false);
+      resetForm();
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(extractApiErrorMessage(err));
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2 h-13 rounded-2xl">
+        <Button
+          variant="outline"
+          className="flex h-13 items-center gap-2 rounded-2xl"
+        >
           <PlusCircle className="h-4 w-4" />
           สร้างพนักงาน
         </Button>
@@ -76,31 +110,40 @@ export default function CreateEmployeeDialog({ onCreate }: Props) {
             <div className="p-2">
               <FieldGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field>
-                  <Label>Username</Label>
+                  <Label>ชื่อ</Label>
                   <div className="relative">
                     <User className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <Input
                       className="pl-10"
-                      placeholder="user id"
-                      value={form.user_name}
-                      onChange={(e) =>
-                        handleChange('user_name', e.target.value)
-                      }
+                      placeholder="ชื่อ"
+                      value={form.fname || ''}
+                      onChange={(e) => handleChange('fname', e.target.value)}
                     />
                   </div>
                 </Field>
 
                 <Field>
-                  <Label>ชื่อ-แสดงผล</Label>
+                  <Label>นามสกุล</Label>
                   <div className="relative">
                     <User className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <Input
                       className="pl-10"
-                      placeholder="ชื่อที่แสดง"
-                      value={form.display_name}
-                      onChange={(e) =>
-                        handleChange('display_name', e.target.value)
-                      }
+                      placeholder="นามสกุล"
+                      value={form.lname || ''}
+                      onChange={(e) => handleChange('lname', e.target.value)}
+                    />
+                  </div>
+                </Field>
+
+                <Field>
+                  <Label>Username</Label>
+                  <div className="relative">
+                    <User className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                    <Input
+                      className="pl-10"
+                      placeholder="ชื่อเข้าใช้งานระบบ"
+                      value={form.username}
+                      onChange={(e) => handleChange('username', e.target.value)}
                     />
                   </div>
                 </Field>
@@ -158,6 +201,19 @@ export default function CreateEmployeeDialog({ onCreate }: Props) {
                     />
                   </div>
                 </Field>
+                <Field>
+                  <Label>ยืนยันรหัสผ่าน</Label>
+                  <div className="relative">
+                    <Key className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                    <Input
+                      className="pl-10"
+                      type="password"
+                      placeholder="ยืนยันรหัสผ่าน"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                </Field>
               </FieldGroup>
             </div>
           </ScrollArea>
@@ -168,7 +224,9 @@ export default function CreateEmployeeDialog({ onCreate }: Props) {
                 ยกเลิก
               </Button>
             </DialogClose>
-            <Button type="submit">สร้างพนักงาน</Button>
+            <Button type="submit" disabled={creatingEmployee}>
+              สร้างพนักงาน
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

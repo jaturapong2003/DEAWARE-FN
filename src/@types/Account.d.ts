@@ -14,10 +14,9 @@ export interface AccountInfo {
 }
 
 export interface CreateAccount {
-  user_name: string;
-  display_name?: string;
-  first_name?: string;
-  last_name?: string;
+  fname: string;
+  lname?: string;
+  username: string;
   email?: string;
   password: string;
   phone?: string;
