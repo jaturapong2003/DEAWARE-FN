@@ -20,30 +20,25 @@ const LayeredSpinner = ({ colorMode = 'primary' }) => {
 
   return (
     <div className="relative flex h-20 w-20 items-center justify-center">
-      {/* 🌟 Glow Effect (Layer 0) - อิงตามโหมด */}
       <div
         className={`absolute inset-0 animate-pulse rounded-full opacity-20 blur-xl ${colorMode === 'danger' ? 'bg-red-500' : 'bg-[#d1385c]'}`}
       ></div>
 
-      {/* 💫 Layer 1: วงนอกสุด (หมุนช้าๆ ทิศปกติ) */}
       <div
         className={`absolute inset-0 rounded-full border-[3px] border-transparent ${colors.l1} animate-spin`}
         style={{ animationDuration: '3s' }}
       ></div>
 
-      {/* 💫 Layer 2: วงกลาง (หมุนสวนทาง ทิศ Reverse ความเร็วปานกลาง) */}
       <div
         className={`absolute inset-2 rounded-full border-[3px] border-transparent ${colors.l2} animate-spin`}
         style={{ animationDirection: 'reverse', animationDuration: '2s' }}
       ></div>
 
-      {/* 💫 Layer 3: วงในสุด (หมุนเร็ว ทิศปกติ) */}
       <div
         className={`absolute inset-4 rounded-full border-[3px] border-transparent ${colors.l3} animate-spin`}
         style={{ animationDuration: '1s' }}
       ></div>
 
-      {/* 🎯 Core Dot: จุดศูนย์กลาง */}
       <div
         className={`absolute m-auto h-2 w-2 animate-pulse rounded-full ${colorMode === 'danger' ? 'bg-red-500' : 'bg-[#d1385c]'}`}
       ></div>
@@ -51,15 +46,10 @@ const LayeredSpinner = ({ colorMode = 'primary' }) => {
   );
 };
 
-// ============================================================================
-// 🚀 MAIN COMPONENT
-// ============================================================================
 const LoadingPage = ({ message = 'กำลังโหลด...', fullScreen = true }) => {
-  // 🔌 ใช้งาน Hook จริงของคุณ Beam ได้เลย
   const { keycloak, initialized } = useKeycloak();
   const { loggingOut } = useAuthStore();
 
-  // 1️⃣ กรณี: กำลังออกจากระบบ
   if (loggingOut) {
     return (
       <div className="animate-in fade-in fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm duration-300">
@@ -76,12 +66,10 @@ const LoadingPage = ({ message = 'กำลังโหลด...', fullScreen = 
     );
   }
 
-  // 2️⃣ กรณี: รอ Keycloak เช็คสิทธิ์
   if (initialized && !keycloak.authenticated) {
     return null;
   }
 
-  // 3️⃣ กรณี: Loading ปกติ
   if (fullScreen) {
     return (
       <div

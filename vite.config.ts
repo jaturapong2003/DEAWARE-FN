@@ -15,7 +15,7 @@ export default defineConfig({
     proxy: {
       '/api/': {
         // target: 'http://kkserver-x99s-d4-plus.tail1cf519.ts.net:3001',
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },

@@ -577,7 +577,7 @@ function DashboardId({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4">
       {/* Time range filter buttons */}
       <div className="mt-3 flex items-center gap-3">
         <span className="text-muted-foreground text-sm">ช่วงเวลา:</span>

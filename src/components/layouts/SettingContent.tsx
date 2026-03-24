@@ -16,6 +16,7 @@ import {
   Phone,
   Briefcase,
 } from 'lucide-react';
+import LoadingPage from '@/components/common/LoadingPage';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -39,6 +40,48 @@ export default function SettingContent({ open, onClose }: Props) {
   const [faceFiles, setFaceFiles] = useState<File[]>([]);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [position, setPosition] = useState<string>('');
+  const [fname, setFname] = useState<string>('Somchai');
+  const [lname, setLname] = useState<string>('Sukjai');
+  const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    let isCancelled = false;
+
+    const fetchProfile = async () => {
+      setIsLoadingProfile(true);
+
+      try {
+        const response = await apiClient.get('/employee/me');
+        if (isCancelled) return;
+
+        const data = response.data as {
+          fname?: string;
+          lname?: string;
+          phone_number?: string;
+          position?: string;
+        };
+
+        setFname(data.fname || 'Somchai');
+        setLname(data.lname || 'Sukjai');
+        setPhoneNumber(data.phone_number || '');
+        setPosition(data.position || '');
+      } catch {
+        toast.error('ไม่สามารถโหลดข้อมูลผู้ใช้งานได้ กรุณาลองใหม่อีกครั้ง');
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingProfile(false);
+        }
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [open]);
 
   const clearProfile = () => setProfileFiles([]);
   const clearFace = () => setFaceFiles([]);
@@ -125,10 +168,22 @@ export default function SettingContent({ open, onClose }: Props) {
     mutationFn: async (): Promise<{ message?: string }> =>
       (await fetchWithAuth('/api/employee/update', {
         method: 'PATCH',
-        body: JSON.stringify({ phone_number: phoneNumber, position }),
+        body: JSON.stringify({
+          fname,
+          lname,
+          phone_number: phoneNumber,
+          position,
+        }),
       })) as { message?: string },
-    onSuccess: (data) =>
-      toast.success(data?.message || 'อัปเดตข้อมูลโปรไฟล์สำเร็จ'),
+    onSuccess: (data) => {
+      toast.success(data?.message || 'อัปเดตข้อมูลโปรไฟล์สำเร็จ');
+
+      const setAccountInfo = useAuthStore.getState().setAccountInfo;
+      apiClient
+        .get('/employee/me')
+        .then((resp) => setAccountInfo(resp.data))
+        .catch(() => {});
+    },
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : 'อัปเดตข้อมูลโปรไฟล์ล้มเหลว';
@@ -146,6 +201,15 @@ export default function SettingContent({ open, onClose }: Props) {
         ? uploadFaceImagesMutation.status === 'pending'
         : updateProfileMutation.status === 'pending';
 
+  const isProfileUploading = uploadProfileImagesMutation.status === 'pending';
+  const isFaceUploading = uploadFaceImagesMutation.status === 'pending';
+  const isProfileUpdating = updateProfileMutation.status === 'pending';
+  const isAnyLoading =
+    isLoadingProfile ||
+    isProfileUploading ||
+    isFaceUploading ||
+    isProfileUpdating;
+
   const navItems: {
     id: 'profile' | 'ai' | 'update';
     label: string;
@@ -158,20 +222,25 @@ export default function SettingContent({ open, onClose }: Props) {
 
   return (
     <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 duration-200 sm:p-6">
-      {/* 🌟 Backdrop แบบมีมิติ */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity"
-        onClick={onClose}
+        onClick={() => {
+          if (!isAnyLoading) onClose();
+        }}
       />
 
-      {/* 📦 Modal Container (Glassmorphism Dark Mode) */}
       <div className="bg-background relative z-10 mx-auto flex h-[85vh] w-full max-w-5xl scale-100 transform flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl transition-all sm:flex-row">
-        {/* 📑 Sidebar Navigation */}
+        {isAnyLoading && (
+          <LoadingPage message="กรุณารอสักครู่..." fullScreen />
+        )}
+
         <div className="shrink-0 border-b border-white/10 p-6 sm:w-72 sm:border-r sm:border-b-0">
           <div className="mb-8 flex items-center justify-between">
             <h2 className="text-xl font-bold tracking-tight">Settings</h2>
             <button
-              onClick={onClose}
+              onClick={() => {
+                if (!isAnyLoading) onClose();
+              }}
               className="rounded-full p-2 transition-colors hover:bg-white/10"
             >
               <X size={20} />
@@ -185,7 +254,10 @@ export default function SettingContent({ open, onClose }: Props) {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActive(item.id)}
+                  onClick={() => {
+                    if (!isAnyLoading) setActive(item.id);
+                  }}
+                  disabled={isAnyLoading}
                   className={`group relative flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                     isActive ? 'bg-white/10' : 'hover:bg-white/5'
                   }`}
@@ -205,9 +277,7 @@ export default function SettingContent({ open, onClose }: Props) {
           </div>
         </div>
 
-        {/* 📄 Main Content Area */}
         <div className="hide-scrollbar flex-1 overflow-y-auto p-6 sm:p-10">
-          {/* --- SECTION 1: PROFILE UPLOAD --- */}
           {active === 'profile' && (
             <section className="animate-in slide-in-from-right-4 fade-in duration-300">
               <div className="mb-8">
@@ -304,7 +374,7 @@ export default function SettingContent({ open, onClose }: Props) {
 
                     <Button
                       onClick={() => uploadProfileImagesMutation.mutate()}
-                      disabled={isPending || profileFiles.length === 0}
+                      disabled={isAnyLoading || profileFiles.length === 0}
                     >
                       {isPending ? 'กำลังอัปโหลด...' : 'อัปโหลดรูปโปรไฟล์'}
                     </Button>
@@ -411,7 +481,7 @@ export default function SettingContent({ open, onClose }: Props) {
 
                     <Button
                       onClick={() => uploadFaceImagesMutation.mutate()}
-                      disabled={isPending || faceFiles.length === 0}
+                      disabled={isAnyLoading || faceFiles.length === 0}
                     >
                       {isPending ? 'กำลังส่งให้ AI...' : 'อัปโหลดให้ AI'}
                     </Button>
@@ -433,46 +503,79 @@ export default function SettingContent({ open, onClose }: Props) {
                 </p>
               </div>
 
-              <Card className="p-6 sm:p-8">
-                <CardContent className="p-0">
-                  <div className="grid max-w-xl gap-6">
-                    {/* Glassy Input 1 */}
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2 text-sm font-medium">
-                        <Phone size={14} className="text-primary" />{' '}
-                        เบอร์โทรศัพท์
-                      </Label>
-                      <Input
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="08X-XXX-XXXX"
-                      />
-                    </div>
+              {isLoadingProfile ? (
+                <LoadingPage message="กำลังโหลดข้อมูลผู้ใช้งาน..." fullScreen />
+              ) : (
+                <Card className="p-6 sm:p-8">
+                  <CardContent className="p-0">
+                    <div className="grid max-w-xl gap-6">
+                      {/* Glassy Input: First name */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          ชื่อ (fname)
+                        </Label>
+                        <Input
+                          value={fname}
+                          onChange={(e) => setFname(e.target.value)}
+                          placeholder="Somchai"
+                        />
+                      </div>
 
-                    {/* Glassy Input 2 */}
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2 text-sm font-medium">
-                        <Briefcase size={14} className="text-primary" /> ตำแหน่ง
-                      </Label>
-                      <Input
-                        value={position}
-                        onChange={(e) => setPosition(e.target.value)}
-                        placeholder="เช่น Software Engineer"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
+                      {/* Glassy Input: Last name */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          นามสกุล (lname)
+                        </Label>
+                        <Input
+                          value={lname}
+                          onChange={(e) => setLname(e.target.value)}
+                          placeholder="Sukjai"
+                        />
+                      </div>
 
-                <CardFooter className="mt-6 flex justify-end px-0!">
-                  <Button
-                    variant="default"
-                    onClick={() => updateProfileMutation.mutate()}
-                    disabled={isPending}
-                  >
-                    {isPending ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
-                  </Button>
-                </CardFooter>
-              </Card>
+                      {/* Glassy Input 1 */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-sm font-medium">
+                          <Phone size={14} className="text-primary" />{' '}
+                          เบอร์โทรศัพท์
+                        </Label>
+                        <Input
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="08X-XXX-XXXX"
+                        />
+                      </div>
+
+                      {/* Glassy Input 2 */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-sm font-medium">
+                          <Briefcase size={14} className="text-primary" />{' '}
+                          ตำแหน่ง
+                        </Label>
+                        <Input
+                          value={position}
+                          onChange={(e) => setPosition(e.target.value)}
+                          placeholder="เช่น Software Engineer"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+
+                  <CardFooter className="mt-6 flex justify-end px-0!">
+                    <Button
+                      variant="default"
+                      onClick={() => updateProfileMutation.mutate()}
+                      disabled={isAnyLoading}
+                    >
+                      {isAnyLoading
+                        ? 'กำลังประมวลผล...'
+                        : isPending
+                          ? 'กำลังบันทึก...'
+                          : 'บันทึกข้อมูล'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )}
             </section>
           )}
         </div>
