@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useKeycloak } from '@react-keycloak/web';
 import { LogOutIcon } from 'lucide-react';
@@ -24,8 +24,6 @@ import SettingContent from './SettingContent';
 const AppSidebar: React.FC = () => {
   const location = useLocation();
   const { keycloak } = useKeycloak();
-<<<<<<< HEAD
-=======
   const [openSetting, setOpenSetting] = useState(false);
   const user = useAuthStore((state) => state.user);
 
@@ -34,7 +32,6 @@ const AppSidebar: React.FC = () => {
     keycloak.hasResourceRole('admin', import.meta.env.VITE_CLIENT_ID) ||
     keycloak.hasResourceRole('admin', 'DEAWARE') ||
     keycloak.hasResourceRole('admin', 'DFAWARF');
->>>>>>> 298e0c96ada5aaf2a566a92300dda2917f2533b4
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -84,20 +81,6 @@ const AppSidebar: React.FC = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-<<<<<<< HEAD
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">
-            ตั้งค่า
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SettingsDialog />
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-=======
         {/* Admin section separated */}
         {isAdmin && navigationItems.some((it) => it.role === 'admin') && (
           <SidebarGroup>
@@ -127,7 +110,6 @@ const AppSidebar: React.FC = () => {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
->>>>>>> 298e0c96ada5aaf2a566a92300dda2917f2533b4
       </SidebarContent>
       <SidebarFooter className="border-sidebar-border from-sidebar/50 border-t bg-linear-to-t to-transparent">
         {/* Profile summary above logout */}
@@ -184,13 +166,10 @@ const AppSidebar: React.FC = () => {
         </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
-<<<<<<< HEAD
-=======
       <SettingContent
         open={openSetting}
         onClose={() => setOpenSetting(false)}
       />
->>>>>>> 298e0c96ada5aaf2a566a92300dda2917f2533b4
     </Sidebar>
   );
 };

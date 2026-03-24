@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { BarChart3, CalendarDays } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
-import useEmployeeAnalysis from '@/hooks/useEmployeeAnalysis';
 import DashboardId from '../employeeId/Dashboard_Id';
 import type { DateRange } from 'react-day-picker';
 import type { EmployeesList } from '@/@types/Employees';
@@ -27,21 +26,14 @@ function AttendanceMePage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   // ดึงประวัติการเข้างาน (จำกัด 400 รายการสำหรับ Dashboard)
+  // ไม่ block loading เพิ่มเติม — DashboardId fetch analysis เอง (เหมือน EmployeeIdPage)
   const {
     records: dashboardRecords,
     total,
-    loading: historyLoading,
   } = useEmployeeAttendanceHistory(
     profile?.id,
     1,
     400,
-    dateRange?.from,
-    dateRange?.to ?? dateRange?.from
-  );
-
-  // ดึงข้อมูลวิเคราะห์
-  const { analysis, loading: analysisLoading } = useEmployeeAnalysis(
-    profile?.id,
     dateRange?.from,
     dateRange?.to ?? dateRange?.from
   );
@@ -104,16 +96,12 @@ function AttendanceMePage() {
     setDateRange({ from: start, to: end });
   }, []);
 
-  // Loading state (moved after hooks so hooks are unconditional)
+  // Loading state — แสดง loading เฉพาะครั้งแรก (profile) ไม่ block เมื่อเปลี่ยน range
   if (!keycloak.authenticated) {
     return null;
   }
 
-  const isLoading =
-    profileLoading ||
-    (historyLoading && keycloak.authenticated) ||
-    (analysisLoading && keycloak.authenticated);
-  if (isLoading && keycloak.authenticated) {
+  if (profileLoading) {
     return <LoadingPage message="กำลังโหลดข้อมูลส่วนตัว..." fullScreen />;
   }
 
@@ -172,11 +160,11 @@ function AttendanceMePage() {
         </div>
 
         <div className="pt-2">
+          {/* ไม่ส่ง analysis prop — DashboardId fetch เองตาม range ที่เลือก (เหมือน EmployeeIdPage) */}
           <DashboardId
             employee={employeeDataForDashboard}
             records={dashboardRecords}
             total={total}
-            analysis={analysis}
             onRangeChange={handleRangeChange}
           />
         </div>

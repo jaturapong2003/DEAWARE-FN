@@ -372,6 +372,8 @@ function DashboardId({
 
   // ฟิลเตอร์ช่วงเวลา (1 เดือน / 3 เดือน / 6 เดือน / 1 ปี)
   const [range, setRange] = useState<'1m' | '3m' | '6m' | '1y'>('1m');
+  // pendingRange ถูก set ก่อน (sync) เพื่อให้ hook ใช้ค่าล่าสุดทันที ไม่ติด stale state
+  const [pendingRange, setPendingRange] = useState<'1m' | '3m' | '6m' | '1y'>('1m');
 
   const getStartDateForRange = (r: string) => {
     const now = new Date();
@@ -389,35 +391,38 @@ function DashboardId({
     }
   };
 
-  // records ที่ถูกกรองตามช่วงเวลา
+  // records ที่ถูกกรองตามช่วงเวลา (ใช้ pendingRange เพื่อให้ตอบสนองทันที)
   const effectiveRecords = React.useMemo(() => {
-    const start = getStartDateForRange(range);
+    const start = getStartDateForRange(pendingRange);
     return records.filter((r) => {
       if (!r.check_in) return false;
       const d = new Date(r.check_in);
       if (isNaN(d.getTime())) return false;
       return d >= start;
     });
-  }, [records, range]);
+  }, [records, pendingRange]);
 
   // ดึงข้อมูล analysis จาก API ตามช่วงเวลา (ถ้ามี employee)
+  // ใช้ pendingRange เพื่อให้ hook fetch ด้วยค่า range ล่าสุดทันที ไม่รอ setRange async
   const { analysis: rangedAnalysis } = useEmployeeAnalysis(
     onRangeChange ? undefined : employee?.user_id,
-    getStartDateForRange(range),
+    getStartDateForRange(pendingRange),
     new Date()
   );
 
-  const usedAnalysis = rangedAnalysis ?? analysis;
+  const usedAnalysis = onRangeChange ? (analysis ?? rangedAnalysis) : (rangedAnalysis ?? analysis);
 
   // กรอง chart_data จาก analysis ที่ใช้ (ถ้ามี)
   const filteredChartData = React.useMemo(() => {
     if (!Array.isArray(usedAnalysis?.chart_data)) return null;
-    const start = getStartDateForRange(range);
+    const start = getStartDateForRange(pendingRange);
     return usedAnalysis!.chart_data.filter((d) => new Date(d.date) >= start);
-  }, [usedAnalysis, range]);
+  }, [usedAnalysis, pendingRange]);
 
   // เมื่อผู้ใช้เลือกช่วงเวลา ให้ส่ง callback เพื่ออัพเดต calendar ที่หน้า parent
   const handleRangeChange = (r: '1m' | '3m' | '6m' | '1y') => {
+    // set pendingRange ก่อน (sync) เพื่อให้ useMemo และ hook render ด้วยค่าใหม่ทันที
+    setPendingRange(r);
     setRange(r);
     const start = getStartDateForRange(r);
     const end = new Date();

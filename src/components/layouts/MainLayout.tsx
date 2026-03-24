@@ -58,7 +58,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               )}
             </Button>
           </div>
-          </div>
         </header>
 
         {/* content fills remaining space and scrolls inside SidebarInset */}
