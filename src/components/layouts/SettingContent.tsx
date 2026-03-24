@@ -15,6 +15,8 @@ import {
   X,
   Phone,
   Briefcase,
+  UserRoundCog,
+  Mail,
 } from 'lucide-react';
 import LoadingPage from '@/components/common/LoadingPage';
 import { Button } from '@/components/ui/button';
@@ -414,7 +416,7 @@ export default function SettingContent({ open, onClose }: Props) {
                           </div>
                           <p className="text-sm">
                             ลากไฟล์มาวาง หรือ{' '}
-                            <span className="font-semibold">
+                            <span className="text-primary font-semibold">
                               คลิกเพื่อเลือก
                             </span>
                           </p>
@@ -604,12 +606,15 @@ export default function SettingContent({ open, onClose }: Props) {
               {isLoadingProfile ? (
                 <LoadingPage message="กำลังโหลดข้อมูลผู้ใช้งาน..." fullScreen />
               ) : (
-                <Card className="p-6 sm:p-8">
+                <Card className="dark:text-foreground p-6 sm:p-8">
                   <CardContent className="p-0">
                     <div className="grid max-w-xl gap-6">
                       {/* Glassy Input: First name */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium">ชื่อ</Label>
+                        <Label className="flex items-center gap-2 text-sm font-medium">
+                          <UserRoundCog size={16} className="text-primary" />
+                          ชื่อ
+                        </Label>
                         <Input
                           value={fname}
                           onChange={(e) => setFname(e.target.value)}
@@ -619,7 +624,10 @@ export default function SettingContent({ open, onClose }: Props) {
 
                       {/* Glassy Input: Last name */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium">นามสกุล</Label>
+                        <Label className="flex items-center gap-2 text-sm font-medium">
+                          <UserRoundCog size={16} className="text-primary" />
+                          นามสกุล
+                        </Label>
                         <Input
                           value={lname}
                           onChange={(e) => setLname(e.target.value)}
@@ -629,7 +637,10 @@ export default function SettingContent({ open, onClose }: Props) {
 
                       {/* Glassy Input 1 */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium">อีเมล</Label>
+                        <Label className="flex items-center gap-2 text-sm font-medium">
+                          <Mail size={16} className="text-primary" />
+                          อีเมล
+                        </Label>
                         <Input
                           type="email"
                           value={email}
