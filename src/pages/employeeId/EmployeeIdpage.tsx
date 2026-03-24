@@ -33,6 +33,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { exportAttendanceRecordsCSV } from '@/components/common/ExportData';
 import {
   ArrowLeft,
   Mail,
@@ -52,7 +53,15 @@ function EmployeeIdPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+
+  const getDefaultDateRange = () => ({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date(),
+  });
+
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(
+    getDefaultDateRange()
+  );
 
   // รับข้อมูลพนักงานจาก route state
   const stateEmployee = (location.state as { employee?: EmployeesList })
@@ -97,6 +106,19 @@ function EmployeeIdPage() {
   //  ปุ่มกลับ
   const handleGoBack = () => {
     navigate('/employees');
+  };
+
+  const handleExportAttendanceCsv = () => {
+    if (!dashboardRecords || dashboardRecords.length === 0) {
+      toast.error('ไม่มีข้อมูลการเข้างานสำหรับส่งออก');
+      return;
+    }
+
+    exportAttendanceRecordsCSV(
+      employee?.display_name || 'ไม่มีชื่อ',
+      employee?.user_id || 'export',
+      dashboardRecords
+    );
   };
 
   const { keycloak } = useKeycloak();
@@ -173,7 +195,7 @@ function EmployeeIdPage() {
         <div className="relative px-6 pb-6">
           {/* Avatar */}
           <div className="-mt-12 flex flex-col items-center gap-4 sm:-mt-16 sm:flex-row sm:items-end">
-            <Avatar className="border-background  h-24 w-24 border-4 shadow-lg sm:h-32 sm:w-32">
+            <Avatar className="border-background h-24 w-24 border-4 shadow-lg sm:h-32 sm:w-32">
               {imgReady && employee.url_image && (
                 <AvatarImage
                   src={employee.url_image}
@@ -321,7 +343,7 @@ function EmployeeIdPage() {
             </div>
             <div>
               <h2 className="text-lg font-bold">หน้าสรุปผล</h2>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-xs">
                 ภาพรวมการเข้างานของ {employee.display_name}
               </p>
             </div>
@@ -333,13 +355,13 @@ function EmployeeIdPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="border-border/60 bg-background/50 hover:border-border hover:bg-accent/50 flex h-12 w-full items-center justify-between gap-3 rounded-xl px-5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-md sm:w-auto"
+                  className="border-border/60 bg-background/50 hover:border-border hover:bg-accent/50 flex h-9.5 w-full cursor-pointer items-center justify-between gap-3 rounded-md pr-4 pl-2 backdrop-blur-sm transition-all duration-600 hover:shadow-inner sm:w-auto"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="bg-primary/10 text-primary flex rounded-xl p-2">
+                    <div className="bg-primary/10 text-primary flex rounded-md p-2">
                       <CalendarDays className="h-5 w-5" />
                     </div>
-                    <span className="text-[15px] font-semibold tracking-wide">
+                    <span className="text-sm font-medium">
                       {dateRange?.from
                         ? dateRange.to
                           ? `${dateRange.from.toLocaleDateString('th-TH', {
@@ -371,21 +393,31 @@ function EmployeeIdPage() {
                 />
               </PopoverContent>
             </Popover>
-            <Button
-              variant={'outline'}
-              onClick={() =>
-                setDateRange({
-                  from: new Date(
-                    new Date().getFullYear(),
-                    new Date().getMonth(),
-                    1
-                  ),
-                  to: new Date(),
-                })
-              }
-            >
-              ล้าง
-            </Button>
+            <div>
+              <Button
+                variant={'outline'}
+                onClick={() =>
+                  setDateRange({
+                    from: new Date(
+                      new Date().getFullYear(),
+                      new Date().getMonth(),
+                      1
+                    ),
+                    to: new Date(),
+                  })
+                }
+                className="mr-2"
+              >
+                ล้าง
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleExportAttendanceCsv}
+                disabled={!dashboardRecords || dashboardRecords.length === 0}
+              >
+                ส่งออก CSV
+              </Button>
+            </div>
           </div>
         </div>
 

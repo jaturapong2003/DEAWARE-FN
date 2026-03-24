@@ -281,7 +281,7 @@ const StatCard: React.FC<{
         {value}
       </p>
       {subValue && (
-        <p className="text-muted-foreground max-w-[140px] text-xs font-medium text-pretty">
+        <p className="text-muted-foreground max-w-35 text-xs font-medium text-pretty">
           {subValue}
         </p>
       )}
@@ -373,7 +373,9 @@ function DashboardId({
   // ฟิลเตอร์ช่วงเวลา (1 เดือน / 3 เดือน / 6 เดือน / 1 ปี)
   const [range, setRange] = useState<'1m' | '3m' | '6m' | '1y'>('1m');
   // pendingRange ถูก set ก่อน (sync) เพื่อให้ hook ใช้ค่าล่าสุดทันที ไม่ติด stale state
-  const [pendingRange, setPendingRange] = useState<'1m' | '3m' | '6m' | '1y'>('1m');
+  const [pendingRange, setPendingRange] = useState<'1m' | '3m' | '6m' | '1y'>(
+    '1m'
+  );
 
   const getStartDateForRange = (r: string) => {
     const now = new Date();
@@ -410,7 +412,9 @@ function DashboardId({
     new Date()
   );
 
-  const usedAnalysis = onRangeChange ? (analysis ?? rangedAnalysis) : (rangedAnalysis ?? analysis);
+  const usedAnalysis = onRangeChange
+    ? (analysis ?? rangedAnalysis)
+    : (rangedAnalysis ?? analysis);
 
   // กรอง chart_data จาก analysis ที่ใช้ (ถ้ามี)
   const filteredChartData = React.useMemo(() => {
@@ -579,9 +583,12 @@ function DashboardId({
   return (
     <div className="space-y-6 px-4">
       {/* Time range filter buttons */}
-      <div className="mt-3 flex items-center gap-3">
-        <span className="text-muted-foreground text-sm">ช่วงเวลา:</span>
-        <div className="flex items-center gap-2">
+      <div className="mt-3 flex items-center gap-1">
+        <span className="text-muted-foreground rounded-md border p-2 text-sm shadow-inner">
+          ช่วงเวลา
+        </span>
+        <span className='text-xl font-bold text-foreground/70'>:</span>
+        <div className="flex items-center gap-2 rounded-md border p-1 shadow-inner">
           <button
             type="button"
             onClick={() => handleRangeChange('1m')}
@@ -884,7 +891,8 @@ function DashboardId({
                                 const avgHours = Number(
                                   usedAnalysis.summary.avg_hours_per_day ?? 0
                                 );
-                                const ratio = total > 0 ? (success / total) * 100 : 0;
+                                const ratio =
+                                  total > 0 ? (success / total) * 100 : 0;
                                 let computedGrade = 'F';
                                 if (ratio >= 90 && avgHours >= FULL_HOURS) {
                                   computedGrade = 'A';
@@ -897,16 +905,16 @@ function DashboardId({
                                   computedGrade === 'A'
                                     ? `สัดส่วน ≥ 90% และ ชั่วโมงเฉลี่ย ≥ ${FULL_HOURS}`
                                     : computedGrade === 'B'
-                                    ? `สัดส่วน ≥ 75%`
-                                    : computedGrade === 'C'
-                                    ? `สัดส่วน ≥ 50%`
-                                    : `สัดส่วน < 50%`;
+                                      ? `สัดส่วน ≥ 75%`
+                                      : computedGrade === 'C'
+                                        ? `สัดส่วน ≥ 50%`
+                                        : `สัดส่วน < 50%`;
 
                                 return (
                                   <div>
                                     สัดส่วนสำเร็จ = {success} / {total} ={' '}
-                                    {ratio.toFixed(0)}% → เกรด {computedGrade}{' '}
-                                    ({reason})
+                                    {ratio.toFixed(0)}% → เกรด {computedGrade} (
+                                    {reason})
                                   </div>
                                 );
                               })()}

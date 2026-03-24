@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useKeycloak } from '@react-keycloak/web';
+import toast from 'react-hot-toast';
 import LoadingPage from '@/components/common/LoadingPage';
 import ErrorPage from '@/components/common/ErrorPage';
 import { Calendar } from '@/components/ui/calendar';
@@ -8,29 +9,30 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from '@/components/ui/popover';
+import { exportAttendanceRecordsCSV } from '@/components/common/ExportData';
 import { Button } from '@/components/ui/button';
 import { BarChart3, CalendarDays } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
 import useEmployeeAttendanceHistory from '@/hooks/useEmployeeAttendanceHistory';
+import useEmployeeAnalysis from '@/hooks/useEmployeeAnalysis';
 import DashboardId from '../employeeId/Dashboard_Id';
 import type { DateRange } from 'react-day-picker';
 import type { EmployeesList } from '@/@types/Employees';
 
-/**
- * หน้าประวัติส่วนตัว - ใช้รูปแบบ Dashboard เหมือนหน้า EmployeeIdPage
- */
 function AttendanceMePage() {
   const { keycloak } = useKeycloak();
   const { profile, isLoading: profileLoading } = useProfile();
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const getDefaultDateRange = () => ({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date(),
+  });
 
-  // ดึงประวัติการเข้างาน (จำกัด 400 รายการสำหรับ Dashboard)
-  // ไม่ block loading เพิ่มเติม — DashboardId fetch analysis เอง (เหมือน EmployeeIdPage)
-  const {
-    records: dashboardRecords,
-    total,
-  } = useEmployeeAttendanceHistory(
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(
+    getDefaultDateRange()
+  );
+
+  const { records: dashboardRecords, total } = useEmployeeAttendanceHistory(
     profile?.id,
     1,
     400,
@@ -38,8 +40,12 @@ function AttendanceMePage() {
     dateRange?.to ?? dateRange?.from
   );
 
-  // แปลง profile เป็น EmployeesList ชั่วคราวสำหรับ DashboardId
-  // ใช้ useMemo เพื่อป้องกันการสร้าง object ใหม่ทุกเรนเดอร์ (ลดการ rerender ของ DashboardId)
+  const { analysis } = useEmployeeAnalysis(
+    profile?.id,
+    dateRange?.from,
+    dateRange?.to ?? dateRange?.from
+  );
+
   const employeeDataForDashboard: EmployeesList = useMemo(
     () => ({
       user_id: profile?.id || '',
@@ -80,10 +86,6 @@ function AttendanceMePage() {
     });
   }, [dateRange]);
 
-  // (Keep behavior same as EmployeeIdPage) — directly set dateRange from Calendar selection
-
-  // (Keep same behavior as EmployeeIdPage) — no stable callback; inline handler passed to DashboardId
-
   const handleClearRange = useCallback(() => {
     setDateRange({
       from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -95,6 +97,19 @@ function AttendanceMePage() {
   const handleRangeChange = useCallback((start?: Date, end?: Date) => {
     setDateRange({ from: start, to: end });
   }, []);
+
+  const handleExportAttendanceCsv = () => {
+    if (!dashboardRecords || dashboardRecords.length === 0) {
+      toast.error('ไม่มีข้อมูลการเข้างานสำหรับส่งออก');
+      return;
+    }
+
+    exportAttendanceRecordsCSV(
+      employeeDataForDashboard.display_name,
+      employeeDataForDashboard.user_id,
+      dashboardRecords
+    );
+  };
 
   // Loading state — แสดง loading เฉพาะครั้งแรก (profile) ไม่ block เมื่อเปลี่ยน range
   if (!keycloak.authenticated) {
@@ -132,7 +147,7 @@ function AttendanceMePage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="flex h-10 items-center gap-3 px-4"
+                  className="border-border/60 bg-background/50 hover:border-border hover:bg-accent/50 flex h-9.5 w-full cursor-pointer items-center justify-between gap-3 rounded-md pr-4 pl-2 backdrop-blur-sm transition-all duration-600 hover:shadow-inner sm:w-auto"
                 >
                   <CalendarDays className="h-4 w-4" />
                   <span className="text-sm">{dateLabel}</span>
@@ -147,15 +162,25 @@ function AttendanceMePage() {
                 />
               </PopoverContent>
             </Popover>
-            {dateRange && (
+            <>
+              {dateRange && (
+                <Button
+                  variant={'outline'}
+                  onClick={handleClearRange}
+                  className="text-muted-foreground hover:text-foreground text-sm"
+                >
+                  ล้าง
+                </Button>
+              )}
               <Button
-                variant={'outline'}
-                onClick={handleClearRange}
-                className="text-muted-foreground hover:text-foreground text-sm"
+                variant="default"
+                onClick={handleExportAttendanceCsv}
+                disabled={!dashboardRecords || dashboardRecords.length === 0}
+                className="text-sm"
               >
-                ล้าง
+                ส่งออก CSV
               </Button>
-            )}
+            </>
           </div>
         </div>
 
@@ -165,6 +190,7 @@ function AttendanceMePage() {
             employee={employeeDataForDashboard}
             records={dashboardRecords}
             total={total}
+            analysis={analysis}
             onRangeChange={handleRangeChange}
           />
         </div>

@@ -176,6 +176,32 @@ export default function SettingContent({ open, onClose }: Props) {
     },
   });
 
+  const clearFaceEmbeddingsMutation = useMutation({
+    mutationFn: async (): Promise<{ message?: string }> => {
+      await fetchWithAuth('/api/employee/face-embeddings', {
+        method: 'DELETE',
+      });
+      return { message: 'ล้างรูปสำหรับ AI สำเร็จ' };
+    },
+    onSuccess: async (data) => {
+      setFaceFiles([]);
+      setFaceEmbeddingCount(0);
+      toast.success(data?.message || 'ล้างรูปสำหรับ AI สำเร็จ');
+
+      const response = await apiClient.get('/employee/me');
+      const backendData = response.data as { face_embedding_count?: number };
+      setFaceEmbeddingCount(backendData.face_embedding_count ?? 0);
+
+      const setAccountInfo = useAuthStore.getState().setAccountInfo;
+      setAccountInfo(response.data);
+    },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : 'ล้างรูปสำหรับ AI ล้มเหลว';
+      toast.error(message);
+    },
+  });
+
   const updateProfileMutation = useMutation({
     mutationFn: async (): Promise<{ message?: string }> =>
       (await fetchWithAuth('/api/employee/update', {
@@ -211,16 +237,19 @@ export default function SettingContent({ open, onClose }: Props) {
     active === 'profile'
       ? uploadProfileImagesMutation.status === 'pending'
       : active === 'ai'
-        ? uploadFaceImagesMutation.status === 'pending'
+        ? uploadFaceImagesMutation.status === 'pending' ||
+          clearFaceEmbeddingsMutation.status === 'pending'
         : updateProfileMutation.status === 'pending';
 
   const isProfileUploading = uploadProfileImagesMutation.status === 'pending';
   const isFaceUploading = uploadFaceImagesMutation.status === 'pending';
+  const isFaceClearing = clearFaceEmbeddingsMutation.status === 'pending';
   const isProfileUpdating = updateProfileMutation.status === 'pending';
   const isAnyLoading =
     isLoadingProfile ||
     isProfileUploading ||
     isFaceUploading ||
+    isFaceClearing ||
     isProfileUpdating;
 
   const navItems: {
@@ -375,13 +404,16 @@ export default function SettingContent({ open, onClose }: Props) {
 
                 <CardFooter className="mt-6 flex justify-end px-0!">
                   <div className="flex gap-2">
-                    <Button
-                      variant="secondary"
-                      onClick={() => clearProfile()}
-                      disabled={profileFiles.length === 0}
-                    >
-                      ล้างรูป
-                    </Button>
+                    {profileFiles.length > 0 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => clearProfile()}
+                        disabled={profileFiles.length === 0}
+                        className="mr-2"
+                      >
+                        ล้างรูป
+                      </Button>
+                    )}
 
                     <Button
                       onClick={() => uploadProfileImagesMutation.mutate()}
@@ -494,29 +526,41 @@ export default function SettingContent({ open, onClose }: Props) {
                 </CardContent>
 
                 <CardFooter className="mt-6 flex flex-col gap-2 px-0!">
-                  <div className="flex w-full justify-end gap-2">
+                  <div className="flex w-full justify-between">
                     <Button
-                      variant="outline"
-                      onClick={() => clearFace()}
-                      disabled={faceFiles.length === 0}
+                      variant="secondary"
+                      onClick={() => clearFaceEmbeddingsMutation.mutate()}
+                      disabled={isAnyLoading}
                     >
-                      ล้างรูป
+                      {isFaceClearing ? 'กำลังล้าง...' : 'รีเช็ตรูป AI'}
                     </Button>
+                    <div>
+                      {faceFiles.length > 0 && (
+                        <Button
+                          variant="outline"
+                          onClick={() => clearFace()}
+                          disabled={faceFiles.length === 0}
+                          className="mr-2"
+                        >
+                          ล้างรูป
+                        </Button>
+                      )}
 
-                    <Button
-                      onClick={() => uploadFaceImagesMutation.mutate()}
-                      disabled={
-                        isAnyLoading ||
-                        faceFiles.length === 0 ||
-                        faceEmbeddingCount >= 10
-                      }
-                    >
-                      {faceEmbeddingCount >= 10
-                        ? 'จำนวนรูปเต็มแล้ว'
-                        : isPending
-                          ? 'กำลังส่งให้ AI...'
-                          : 'อัปโหลดให้ AI'}
-                    </Button>
+                      <Button
+                        onClick={() => uploadFaceImagesMutation.mutate()}
+                        disabled={
+                          isAnyLoading ||
+                          faceFiles.length === 0 ||
+                          faceEmbeddingCount >= 10
+                        }
+                      >
+                        {faceEmbeddingCount >= 10
+                          ? 'จำนวนรูปเต็มแล้ว'
+                          : isPending
+                            ? 'กำลังส่งให้ AI...'
+                            : 'อัปโหลดให้ AI'}
+                      </Button>
+                    </div>
                   </div>
                 </CardFooter>
               </Card>
