@@ -35,15 +35,32 @@ interface Props {
 
 export default function SettingContent({ open, onClose }: Props) {
   const { keycloak } = useKeycloak();
+  const user = useAuthStore((state) => state.user);
+
   const [active, setActive] = useState<'profile' | 'ai' | 'update'>('profile');
   const [profileFiles, setProfileFiles] = useState<File[]>([]);
   const [faceFiles, setFaceFiles] = useState<File[]>([]);
   const [faceEmbeddingCount, setFaceEmbeddingCount] = useState<number>(0);
-  const [phoneNumber, setPhoneNumber] = useState<string>('');
-  const [position, setPosition] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
-  const [fname, setFname] = useState<string>('Somchai');
-  const [lname, setLname] = useState<string>('Sukjai');
+  const keycloakProfile = keycloak?.profile as
+    | {
+        firstName?: string | null;
+        lastName?: string | null;
+        email?: string | null;
+      }
+    | undefined;
+
+  const profileFirstName = keycloakProfile?.firstName || user?.firstName || '';
+  const profileLastName = keycloakProfile?.lastName || user?.lastName || '';
+  const profileEmail = keycloakProfile?.email || user?.email || '';
+
+  const [phoneNumber, setPhoneNumber] = useState<string>(
+    user?.phone_number || ''
+  );
+  const [position, setPosition] = useState<string>(user?.position || '');
+  const [email, setEmail] = useState<string>(profileEmail);
+  const [fname, setFname] = useState<string>(profileFirstName);
+  const [lname, setLname] = useState<string>(profileLastName);
+
   const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(false);
 
   useEffect(() => {
@@ -67,11 +84,11 @@ export default function SettingContent({ open, onClose }: Props) {
           face_embedding_count?: number;
         };
 
-        setFname(data.fname || 'Somchai');
-        setLname(data.lname || 'Sukjai');
-        setPhoneNumber(data.phone_number || '');
-        setPosition(data.position || '');
-        setEmail(data.email ?? '');
+        setFname(data.fname || profileFirstName || '');
+        setLname(data.lname || profileLastName || '');
+        setPhoneNumber(data.phone_number || user?.phone_number || '');
+        setPosition(data.position || user?.position || '');
+        setEmail(data.email ?? profileEmail);
         setFaceEmbeddingCount(data.face_embedding_count ?? 0);
       } catch {
         toast.error('ไม่สามารถโหลดข้อมูลผู้ใช้งานได้ กรุณาลองใหม่อีกครั้ง');
@@ -87,7 +104,14 @@ export default function SettingContent({ open, onClose }: Props) {
     return () => {
       isCancelled = true;
     };
-  }, [open]);
+  }, [
+    open,
+    profileEmail,
+    profileFirstName,
+    profileLastName,
+    user?.phone_number,
+    user?.position,
+  ]);
 
   const clearProfile = () => setProfileFiles([]);
   const clearFace = () => setFaceFiles([]);
@@ -136,11 +160,7 @@ export default function SettingContent({ open, onClose }: Props) {
       setProfileFiles([]);
       toast.success(data?.message || 'อัปโหลดรูปโปรไฟล์สำเร็จ');
 
-      const setAccountInfo = useAuthStore.getState().setAccountInfo;
-      apiClient
-        .get('/employee/me')
-        .then((resp) => setAccountInfo(resp.data))
-        .catch(() => {});
+      apiClient.get('/employee/me').catch(() => {});
     },
     onError: (err: unknown) => {
       const message =
@@ -166,8 +186,7 @@ export default function SettingContent({ open, onClose }: Props) {
       const backendData = response.data as { face_embedding_count?: number };
       setFaceEmbeddingCount(backendData.face_embedding_count ?? 0);
 
-      const setAccountInfo = useAuthStore.getState().setAccountInfo;
-      setAccountInfo(response.data);
+      // no store updates needed, keep local state and keycloak-managed flow
     },
     onError: (err: unknown) => {
       const message =
@@ -192,8 +211,8 @@ export default function SettingContent({ open, onClose }: Props) {
       const backendData = response.data as { face_embedding_count?: number };
       setFaceEmbeddingCount(backendData.face_embedding_count ?? 0);
 
-      const setAccountInfo = useAuthStore.getState().setAccountInfo;
-      setAccountInfo(response.data);
+      // update the store if available
+      useAuthStore.getState().setAccountInfo(response.data);
     },
     onError: (err: unknown) => {
       const message =
@@ -217,10 +236,11 @@ export default function SettingContent({ open, onClose }: Props) {
     onSuccess: (data) => {
       toast.success(data?.message || 'อัปเดตข้อมูลโปรไฟล์สำเร็จ');
 
-      const setAccountInfo = useAuthStore.getState().setAccountInfo;
       apiClient
         .get('/employee/me')
-        .then((resp) => setAccountInfo(resp.data))
+        .then((resp) => {
+          useAuthStore.getState().setAccountInfo(resp.data);
+        })
         .catch(() => {});
     },
     onError: (err: unknown) => {
@@ -299,7 +319,9 @@ export default function SettingContent({ open, onClose }: Props) {
                   }}
                   disabled={isAnyLoading}
                   className={`group relative flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-medium whitespace-nowrap transition-all duration-200 ${
-                    isActive ? 'bg-white/10' : 'hover:bg-white/5'
+                    isActive
+                      ? 'bg-muted-foreground/10'
+                      : 'hover:bg-muted-foreground/10'
                   }`}
                 >
                   {/* Active Indicator (แถบสีแดงด้านซ้าย) */}
@@ -332,8 +354,8 @@ export default function SettingContent({ open, onClose }: Props) {
               <Card className="p-6 sm:p-8">
                 <CardHeader className="px-0">
                   <div className="mb-4 flex items-center gap-2 text-xs font-bold tracking-wider uppercase">
-                    <span className="inline-flex items-center justify-center rounded-lg p-1.5">
-                      <ImageIcon size={16} />
+                    <span className="bg-primary text-accent inline-flex items-center justify-center rounded-lg p-1.5">
+                      <ImageIcon size={30} />
                     </span>
                     <CardTitle className="text-xs">
                       ลากไฟล์หรือคลิกเพื่อเลือก
@@ -341,7 +363,7 @@ export default function SettingContent({ open, onClose }: Props) {
                   </div>
                 </CardHeader>
 
-                {/* ✨ Premium Dropzone */}
+                {/* อัพเดทเวลาล่าสุดPremium Dropzone */}
                 <CardContent className="p-0">
                   <div className="group hover:border-primary/50 hover:bg-primary/5 relative overflow-hidden rounded-2xl border-2 border-dashed border-white/15 transition-all">
                     <input
@@ -452,7 +474,7 @@ export default function SettingContent({ open, onClose }: Props) {
                 </CardHeader>
 
                 <CardContent className="p-0">
-                  {/* ✨ Premium Dropzone (AI Variant using a different subtle color) */}
+                  {/* อัพเดทเวลาล่าสุดPremium Dropzone (AI Variant using a different subtle color) */}
                   <div
                     className={`group relative overflow-hidden rounded-2xl border-2 border-dashed transition-all ${
                       faceEmbeddingCount >= 10
@@ -587,9 +609,7 @@ export default function SettingContent({ open, onClose }: Props) {
                     <div className="grid max-w-xl gap-6">
                       {/* Glassy Input: First name */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                          ชื่อ (fname)
-                        </Label>
+                        <Label className="text-sm font-medium">ชื่อ</Label>
                         <Input
                           value={fname}
                           onChange={(e) => setFname(e.target.value)}
@@ -599,9 +619,7 @@ export default function SettingContent({ open, onClose }: Props) {
 
                       {/* Glassy Input: Last name */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                          นามสกุล (lname)
-                        </Label>
+                        <Label className="text-sm font-medium">นามสกุล</Label>
                         <Input
                           value={lname}
                           onChange={(e) => setLname(e.target.value)}

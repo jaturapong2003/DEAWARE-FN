@@ -147,7 +147,7 @@ function AttendanceMePage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="border-border/60 bg-background/50 hover:border-border hover:bg-accent/50 flex h-9.5 w-full cursor-pointer items-center justify-between gap-3 rounded-md pr-4 pl-2 backdrop-blur-sm transition-all duration-600 hover:shadow-inner sm:w-auto"
+                  className="border-border/60 bg-background/50 hover:border-border hover:bg-accent/50 flex h-9.5 cursor-pointer items-center justify-between gap-3 rounded-md pr-4 pl-2 backdrop-blur-sm transition-all duration-600 hover:shadow-inner sm:w-auto"
                 >
                   <CalendarDays className="h-4 w-4" />
                   <span className="text-sm">{dateLabel}</span>

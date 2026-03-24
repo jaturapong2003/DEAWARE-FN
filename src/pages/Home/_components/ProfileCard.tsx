@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Mail, User, Building2, Phone, Clock, ScanFace } from 'lucide-react';
+import { Mail, User, Phone, Clock, ScanFace } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -148,19 +148,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                 </div>
                 <p className="text-foreground pl-9 text-sm font-medium sm:text-base">
                   {displayName || '-'}
-                </p>
-              </div>
-
-              {/* Username (Chart-3) */}
-              <div className="group hover:bg-accent/10 -m-2 cursor-default space-y-1.5 rounded-lg p-2 transition-colors hover:shadow-sm">
-                <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
-                  <div className="group-hover:bg-chart-3/10 flex h-7 w-7 items-center justify-center rounded-md bg-transparent transition-all duration-200 group-hover:scale-110">
-                    <Building2 className="text-chart-3/60 group-hover:text-chart-3 h-4 w-4 transition-colors duration-200" />
-                  </div>
-                  <span>ชื่อผู้ใช้</span>
-                </div>
-                <p className="text-foreground pl-9 text-sm font-medium sm:text-base">
-                  {userName || '-'}
                 </p>
               </div>
 

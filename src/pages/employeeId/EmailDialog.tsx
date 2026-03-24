@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import toast from 'react-hot-toast';
 import { Textarea } from '@/components/ui/textarea';
+import LoadingPage from '@/components/common/LoadingPage';
 import { fetchWithAuth } from '@/config/fetctWithAuth';
 import { Button } from '@/components/ui/button';
 import { Mail } from 'lucide-react';
@@ -23,7 +24,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 interface SendEmailRequest {
   subject: string;
   details: string;
-  type: 'normal' | 'warning';
+  emailType: 'normal' | 'warning';
 }
 
 interface SendEmailResponse {
@@ -45,7 +46,7 @@ export default function EmaillDialog({ employeeId }: { employeeId: string }) {
   >({
     mutationFn: async (emailData) => {
       return await fetchWithAuth<SendEmailResponse>(
-        `/api/employee/${employeeId}/send-email`,
+        `/api/employee/email/${employeeId}`,
         {
           method: 'POST',
           body: JSON.stringify(emailData),
@@ -53,7 +54,7 @@ export default function EmaillDialog({ employeeId }: { employeeId: string }) {
       );
     },
     onSuccess: (data) => {
-      alert(data.message || 'ส่งอีเมลสำเร็จ');
+      toast.success(data.message || 'ส่งอีเมลสำเร็จ');
       // รีเซ็ตฟอร์มและปิด dialog
       setSubject('');
       setDetails('');
@@ -68,10 +69,6 @@ export default function EmaillDialog({ employeeId }: { employeeId: string }) {
   const handleSubmitEmail = (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('subject: ', subject);
-    console.log('details: ', details);
-    console.log('type: ', emailType);
-
     // ตรวจสอบข้อมูล
     if (!subject.trim() || !details.trim()) {
       toast.error('กรุณากรอกหัวข้อและรายละเอียด');
@@ -82,73 +79,77 @@ export default function EmaillDialog({ employeeId }: { employeeId: string }) {
     sendEmailMutation.mutate({
       subject: subject.trim(),
       details: details.trim(),
-      type: emailType,
+      emailType: emailType,
     });
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={'outline'}>
-          <Mail />
+        <Button variant={'outline'}  className='cursor-pointer h-12 w-12'>
+          <Mail className='size-7' />
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <form onSubmit={handleSubmitEmail}>
-          <DialogHeader>
-            <DialogTitle>ฟอร์มส่งอีเมลให้พนักงาน</DialogTitle>
-          </DialogHeader>
-          <FieldGroup className="mt-5">
-            <Field>
-              <Label>หัวข้อ</Label>
-              <Input
-                placeholder="กรอกหัวข้อที่นี่"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <Label>รายละเอียด</Label>
-              <Textarea
-                placeholder="กรอกรายละเอียดที่นี่"
-                value={details}
-                onChange={(e) => setDetails(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <Label>ประเภทจดหมาย</Label>
-              <RadioGroup
-                value={emailType}
-                onValueChange={(value) =>
-                  setEmailType(value as 'normal' | 'warning')
-                }
-              >
-                <Field orientation={'horizontal'}>
-                  <RadioGroupItem id="normal" value="normal" />
-                  <Label htmlFor="normal">จดหมายทั่วไป</Label>
-                </Field>
-                <Field orientation={'horizontal'}>
-                  <RadioGroupItem id="warning" value="warning" />
-                  <Label htmlFor="warning">จดหมายแจ้งเตือน</Label>
-                </Field>
-              </RadioGroup>
-            </Field>
-          </FieldGroup>
-          <DialogFooter className="mt-6">
-            <DialogClose asChild>
-              <Button
-                variant={'outline'}
-                type="button"
-                disabled={sendEmailMutation.isPending}
-              >
-                ยกเลิก
+        {sendEmailMutation.isPending ? (
+          <LoadingPage message="กำลังส่งอีเมล..." fullScreen={false} />
+        ) : (
+          <form onSubmit={handleSubmitEmail}>
+            <DialogHeader>
+              <DialogTitle>ฟอร์มส่งอีเมลให้พนักงาน</DialogTitle>
+            </DialogHeader>
+            <FieldGroup className="mt-5">
+              <Field>
+                <Label>หัวข้อ</Label>
+                <Input
+                  placeholder="กรอกหัวข้อที่นี่"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <Label>รายละเอียด</Label>
+                <Textarea
+                  placeholder="กรอกรายละเอียดที่นี่"
+                  value={details}
+                  onChange={(e) => setDetails(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <Label>ประเภทจดหมาย</Label>
+                <RadioGroup
+                  value={emailType}
+                  onValueChange={(value) =>
+                    setEmailType(value as 'normal' | 'warning')
+                  }
+                >
+                  <Field orientation={'horizontal'}>
+                    <RadioGroupItem id="normal" value="normal" />
+                    <Label htmlFor="normal">จดหมายทั่วไป</Label>
+                  </Field>
+                  <Field orientation={'horizontal'}>
+                    <RadioGroupItem id="warning" value="warning" />
+                    <Label htmlFor="warning">จดหมายแจ้งเตือน</Label>
+                  </Field>
+                </RadioGroup>
+              </Field>
+            </FieldGroup>
+            <DialogFooter className="mt-6">
+              <DialogClose asChild>
+                <Button
+                  variant={'outline'}
+                  type="button"
+                  disabled={sendEmailMutation.isPending}
+                >
+                  ยกเลิก
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={sendEmailMutation.isPending}>
+                {sendEmailMutation.isPending ? 'กำลังส่ง...' : 'ส่งอีเมล'}
               </Button>
-            </DialogClose>
-            <Button type="submit" disabled={sendEmailMutation.isPending}>
-              {sendEmailMutation.isPending ? 'กำลังส่ง...' : 'ส่งอีเมล'}
-            </Button>
-          </DialogFooter>
-        </form>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

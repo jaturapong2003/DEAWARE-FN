@@ -51,6 +51,7 @@ export interface AttendanceSingleResponse {
 // สำหรับการตอบกลับจากการวิเคราะห์ข้อมูลเข้างานของพนักงานรายบุคคล
 export interface EmployeeAnalysisResponse {
   data: {
+    is_admin: boolean;
     summary: {
       total_work_minutes: number;
       success_days_count: number;

@@ -33,7 +33,7 @@ const EmployeeCard: React.FC<{ employee: EmployeesList }> = ({ employee }) => {
     >
       <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-[#d1385c]/10 blur-2xl transition-all duration-500 group-hover:bg-[#d1385c]/20" />
 
-      <div className="relative z-10 flex flex-col items-center text-center">
+      <div className="relative z-10 flex h-full flex-col items-center text-center">
         <div className="relative mb-4">
           <Avatar className="border-border h-20 w-20 border-2 shadow-xl transition-transform duration-300 group-hover:scale-105 group-hover:border-white/30">
             <AvatarImage src={employee.url_image} alt={employee.display_name} />
@@ -107,7 +107,7 @@ function EmployeesPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[min(100%,1200px)] space-y-6 px-4 py-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="border-border relative overflow-hidden rounded-3xl border p-6 backdrop-blur-xl sm:p-8">
         <div className="absolute -top-32 -left-32 h-64 w-64 rounded-full bg-[#d1385c]/20 blur-[80px]" />
@@ -150,7 +150,7 @@ function EmployeesPage() {
 
       {/* รายการพนักงาน */}
       {filteredEmployees.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredEmployees.map((employee) => (
             <EmployeeCard key={employee.user_id} employee={employee} />
           ))}

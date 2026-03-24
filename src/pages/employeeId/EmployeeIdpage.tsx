@@ -38,13 +38,13 @@ import {
   ArrowLeft,
   Mail,
   Phone,
-  User,
   CalendarDays,
   AlertTriangle,
   UserRoundCog,
   BarChart3,
 } from 'lucide-react';
 import DashboardId from './Dashboard_Id';
+import EmaillDialog from './EmailDialog';
 
 /**
  * หน้ารายละเอียดพนักงาน - แสดงโปรไฟล์และประวัติการเข้างาน
@@ -97,11 +97,14 @@ function EmployeeIdPage() {
   );
 
   // ดึงข้อมูลวิเคราะห์จากฝั่ง Server
-  const { analysis } = useEmployeeAnalysis(
+  const { analysis, refetch: refetchAnalysis } = useEmployeeAnalysis(
     id,
     dateRange?.from,
     dateRange?.to ?? dateRange?.from
   );
+
+  const [localIsAdmin, setLocalIsAdmin] = useState<boolean | null>(null);
+  const isAdmin = localIsAdmin ?? analysis?.is_admin ?? false;
 
   //  ปุ่มกลับ
   const handleGoBack = () => {
@@ -123,6 +126,80 @@ function EmployeeIdPage() {
 
   const { keycloak } = useKeycloak();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const assignRoleMutation = useMutation({
+    mutationFn: async (data: {
+      role: string;
+    }): Promise<{ message?: string }> => {
+      if (!employee?.user_id) {
+        throw new Error('ไม่พบพนักงาน');
+      }
+      const role = data.role.trim();
+      if (!role) {
+        throw new Error('กรุณากรอกชื่อ role');
+      }
+
+      return (await fetchWithAuth(`/api/employee/${employee.user_id}/role`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role_name: role }),
+      })) as { message?: string };
+    },
+    onSuccess: (data) => {
+      toast.success(data?.message || 'มอบสิทธิ์สำเร็จ');
+      setLocalIsAdmin(true);
+      refetchAnalysis();
+    },
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : 'มอบสิทธิ์ไม่สำเร็จ';
+      toast.error(message);
+    },
+  });
+
+  const revokeRoleMutation = useMutation({
+    mutationFn: async (data: {
+      role: string;
+    }): Promise<{ message?: string }> => {
+      if (!employee?.user_id) {
+        throw new Error('ไม่พบพนักงาน');
+      }
+      const role = data.role.trim();
+      if (!role) {
+        throw new Error('กรุณากรอกชื่อ role');
+      }
+
+      return (await fetchWithAuth(`/api/employee/${employee.user_id}/role`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role_name: role }),
+      })) as { message?: string };
+    },
+    onSuccess: (data) => {
+      toast.success(data?.message || 'ยกเลิกสิทธิ์สำเร็จ');
+      setLocalIsAdmin(false);
+      refetchAnalysis();
+    },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : 'ยกเลิกสิทธิ์ไม่สำเร็จ';
+      toast.error(message);
+    },
+  });
+
+  const roleToApply = 'admin';
+  const roleButtonLabel = isAdmin ? 'ยกเลิกสิทธิ์ผู้ดูแล' : 'มอบสิทธิ์ผู้ดูแล';
+  const roleButtonVariant = isAdmin ? 'outline' : 'default';
+  const roleButtonOnClick = () => {
+    if (isAdmin) {
+      revokeRoleMutation.mutate({ role: roleToApply });
+    } else {
+      assignRoleMutation.mutate({ role: roleToApply });
+    }
+  };
 
   const deleteEmployeeMutation = useMutation({
     mutationFn: async () => {
@@ -181,17 +258,14 @@ function EmployeeIdPage() {
 
   return (
     <div className="space-y-2">
-      {/*  ปุ่มกลับ */}
-      <Button variant={'link'} onClick={handleGoBack}>
-        <ArrowLeft className="h-4 w-4" />
-        <span className="text-sm font-medium">กลับไปหน้ารายชื่อ</span>
-      </Button>
-
       {/* Profile Card */}
-      <div className="bg-card border-border dark:border-border overflow-hidden rounded-xl border shadow-sm">
+      <div className="bg-card border-border dark:border-border relative overflow-hidden rounded-xl border shadow-sm">
         {/* Header gradient */}
         <div className="from-primary/20 to-primary/5 h-24 bg-linear-to-r sm:h-32" />
 
+        <div className="absolute top-5 right-5">
+          <EmaillDialog employeeId={employee.user_id} />
+        </div>
         <div className="relative px-6 pb-6">
           {/* Avatar */}
           <div className="-mt-12 flex flex-col items-center gap-4 sm:-mt-16 sm:flex-row sm:items-end">
@@ -208,11 +282,11 @@ function EmployeeIdPage() {
             </Avatar>
             <div className="flex w-full items-center justify-between">
               <div className="flex-1 text-center sm:pb-2 sm:text-left">
-                <h1 className="text-xl font-bold sm:text-2xl">
+                <h1 className="text-foreground/90 text-xl font-bold sm:text-2xl">
                   {employee.display_name || 'ไม่มีชื่อ'}
                 </h1>
-                <Badge variant="secondary" className="mt-1 gap-1">
-                  <UserRoundCog className="h-3.5 w-3.5" />
+                <Badge variant="default" className="mt-1 gap-1 text-sm">
+                  <UserRoundCog className="h-5 w-5" />
                   {employee.position || 'พนักงาน'}
                 </Badge>
               </div>
@@ -226,63 +300,58 @@ function EmployeeIdPage() {
                   </div>
                 )}
 
-                <AlertDialog
-                  open={isDeleteDialogOpen}
-                  onOpenChange={setIsDeleteDialogOpen}
-                >
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="destructive"
-                      disabled={deleteEmployeeMutation.status === 'pending'}
-                    >
-                      ลบพนักงาน
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
-                    </AlertDialogHeader>
-                    <AlertDialogDescription>
-                      คุณแน่ใจหรือไม่ว่าจะลบพนักงานคนนี้?
-                      การกระทำนี้ไม่สามารถย้อนกลับได้
-                    </AlertDialogDescription>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          deleteEmployeeMutation.mutate();
-                        }}
+                <div className="flex gap-3">
+                  <AlertDialog
+                    open={isDeleteDialogOpen}
+                    onOpenChange={setIsDeleteDialogOpen}
+                  >
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
                         disabled={deleteEmployeeMutation.status === 'pending'}
                       >
-                        ยืนยันลบ
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        ลบพนักงาน
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                      </AlertDialogHeader>
+                      <AlertDialogDescription>
+                        คุณแน่ใจหรือไม่ว่าจะลบพนักงานคนนี้?
+                        การกระทำนี้ไม่สามารถย้อนกลับได้
+                      </AlertDialogDescription>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            deleteEmployeeMutation.mutate();
+                          }}
+                          disabled={deleteEmployeeMutation.status === 'pending'}
+                        >
+                          ยืนยันลบ
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
 
-                {/* <EmaillDialog employeeId={employee.user_id} /> */}
+                  <Button
+                    variant={roleButtonVariant as 'default' | 'outline'}
+                    onClick={roleButtonOnClick}
+                    disabled={
+                      assignRoleMutation.status === 'pending' ||
+                      revokeRoleMutation.status === 'pending'
+                    }
+                  >
+                    {roleButtonLabel}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
 
           {/* ข้อมูลรายละเอียด */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* User ID */}
-            <div className="group bg-muted/40 hover:bg-muted/70 flex cursor-default items-center gap-3 rounded-xl p-3 transition-colors duration-200">
-              <div className="bg-primary/10 group-hover:bg-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110">
-                <User className="text-primary/60 group-hover:text-primary h-5 w-5 transition-colors duration-200" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-muted-foreground text-xs">User ID</p>
-                <p
-                  className="truncate text-sm font-medium"
-                  title={employee.user_id}
-                >
-                  {employee.user_id}
-                </p>
-              </div>
-            </div>
-
             {/* อีเมล */}
             <div className="group bg-muted/40 hover:bg-muted/70 flex cursor-default items-center gap-3 rounded-xl p-3 transition-colors duration-200">
               <div className="bg-chart-2/10 group-hover:bg-chart-2/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110">
@@ -314,22 +383,6 @@ function EmployeeIdPage() {
                 </p>
               </div>
             </div>
-
-            {/* ตำแหน่ง */}
-            <div className="group bg-muted/40 hover:bg-muted/70 flex cursor-default items-center gap-3 rounded-xl p-3 transition-colors duration-200">
-              <div className="bg-chart-5/10 group-hover:bg-chart-5/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110">
-                <UserRoundCog className="text-chart-5/60 group-hover:text-chart-5 h-5 w-5 transition-colors duration-200" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-muted-foreground text-xs">ตำแหน่ง</p>
-                <p
-                  className="truncate text-sm font-medium"
-                  title={employee.position || '-'}
-                >
-                  {employee.position || '-'}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -349,7 +402,7 @@ function EmployeeIdPage() {
             </div>
           </div>
 
-          {/* 📅 เลือกช่วงวันที่ */}
+          {/* อัพเดทเวลาล่าสุดเลือกช่วงวันที่ */}
           <div className="flex w-full flex-col items-start gap-4 sm:w-auto sm:flex-row sm:items-center">
             <Popover>
               <PopoverTrigger asChild>
@@ -393,7 +446,7 @@ function EmployeeIdPage() {
                 />
               </PopoverContent>
             </Popover>
-            <div>
+            <div className="flex">
               <Button
                 variant={'outline'}
                 onClick={() =>

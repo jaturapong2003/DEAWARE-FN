@@ -49,7 +49,7 @@ const TransectionButton: React.FC<TransectionButtonProps> = ({
   };
 
   return (
-    <div className="bg-card group rounded-xl border border-border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
+    <div className="bg-card group border-border rounded-xl border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <CardTitle className="from-primary/80 to-foreground bg-linear-to-r bg-clip-text text-lg font-semibold text-transparent">
@@ -70,7 +70,7 @@ const TransectionButton: React.FC<TransectionButtonProps> = ({
           {isWorking
             ? 'กำลังทำงาน'
             : hasFinishedWork
-              ? 'สิ้นสุดงานแล้ว'
+              ? 'อัพเดทเวลาล่าสุด'
               : 'ยังไม่เข้างาน'}
         </Badge>
       </div>
