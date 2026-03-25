@@ -60,8 +60,14 @@ export default function CreateEmployeeDialog({ onCreate }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.username?.trim() || !form.password?.trim()) {
+    const username = form.username?.trim() ?? '';
+    if (!username || !form.password?.trim()) {
       toast.error('กรุณากรอก User และรหัสผ่าน');
+      return;
+    }
+
+    if (username.length < 3) {
+      toast.error('Username ต้องมีอย่างน้อย 3 ตัวอักษร');
       return;
     }
 

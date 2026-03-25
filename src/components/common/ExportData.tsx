@@ -25,14 +25,15 @@ export const attendanceCsvColumns: CsvExportColumn<AttendanceCsvRow>[] = [
   { key: 'ชั่วโมงโอที', label: 'ชั่วโมงโอที' },
 ];
 
-const formatThaiDate = (date: Date | null): string =>
-  date
-    ? date.toLocaleDateString('th-TH', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      })
-    : '';
+const formatThaiDate = (date: Date | null): string => {
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('th-TH', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+};
 
 const formatThaiTime = (date: Date | null): string =>
   date
@@ -49,18 +50,28 @@ export const buildAttendanceCsvRows = (
   records.map((record) => {
     const checkInDate = record.check_in ? new Date(record.check_in) : null;
     const checkOutDate = record.check_out ? new Date(record.check_out) : null;
+    const effectiveDate = checkInDate || checkOutDate;
 
-    const workedHours = record.work_hours
-      ? Number(record.work_hours)
-      : calcHours(record);
+    const parsedWorkHours = Number(record.work_hours);
+    const calculatedHours = calcHours(record);
+    const workedHours =
+      Number.isFinite(parsedWorkHours) && parsedWorkHours >= 0
+        ? parsedWorkHours
+        : Number.isFinite(calculatedHours)
+          ? calculatedHours
+          : 0;
+
+    const otHours = Number.isFinite(workedHours)
+      ? Math.max(workedHours - FULL_HOURS, 0)
+      : 0;
 
     return {
-      วัน: formatThaiDate(checkInDate),
+      วัน: formatThaiDate(effectiveDate),
       ชื่อ: employeeName,
       เวลาเข้า: formatThaiTime(checkInDate),
       เวลาออก: formatThaiTime(checkOutDate),
-      ชั่วโมงที่ทำ: `${mentionedNumber(workedHours || 0, 2)}`,
-      ชั่วโมงโอที: `${Math.max(workedHours - FULL_HOURS, 0).toFixed(2)}`,
+      ชั่วโมงที่ทำ: `${mentionedNumber(workedHours, 2)}`,
+      ชั่วโมงโอที: `${otHours.toFixed(2)}`,
     };
   });
 
@@ -86,7 +97,6 @@ const serializeCsvRows = <T extends object>(
 ): object[] => {
   if (!columns || columns.length === 0) {
     return data.map((row) => {
-      // ensure objects only (no methods or prototype fields)
       const plain: Record<string, unknown> = {};
       Object.keys(row).forEach((key) => {
         plain[key] = (row as Record<string, unknown>)[key];
@@ -160,15 +170,45 @@ export const exportToCSV = <T extends object>(options: CsvExportOptions<T>) => {
   URL.revokeObjectURL(url);
 };
 
+const formatIsoDate = (date: Date): string => date.toISOString().slice(0, 10);
+
+const sanitizeFileName = (value: string): string =>
+  value
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .slice(0, 128);
+
+const buildCsvFilename = (
+  employeeName: string,
+  from?: Date | null,
+  to?: Date | null
+): string => {
+  const base = sanitizeFileName(employeeName || 'attendance');
+  if (from && to) {
+    return `${base} ${formatIsoDate(from)} ถึง ${formatIsoDate(to)}`;
+  }
+  if (from) {
+    return `${base} ${formatIsoDate(from)}`;
+  }
+  if (to) {
+    return `${base} ${formatIsoDate(to)}`;
+  }
+  return base;
+};
+
 export const exportAttendanceRecordsCSV = (
   employeeName: string,
-  employeeId: string,
-  records: AttendanceRecord[]
+  records: AttendanceRecord[],
+  dateFrom?: Date | null,
+  dateTo?: Date | null
 ) => {
   const rows = buildAttendanceCsvRows(employeeName, records);
+  const filename = buildCsvFilename(employeeName, dateFrom, dateTo);
+
   exportToCSV({
     data: rows,
-    filename: `attendance_${employeeId}`,
+    filename,
     columns: attendanceCsvColumns,
     bom: true,
     delimiter: ',',

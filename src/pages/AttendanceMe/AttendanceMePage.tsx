@@ -106,8 +106,9 @@ function AttendanceMePage() {
 
     exportAttendanceRecordsCSV(
       employeeDataForDashboard.display_name,
-      employeeDataForDashboard.user_id,
-      dashboardRecords
+      dashboardRecords,
+      dateRange?.from,
+      dateRange?.to
     );
   };
 

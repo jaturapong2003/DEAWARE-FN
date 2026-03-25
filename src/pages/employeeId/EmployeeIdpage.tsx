@@ -119,8 +119,9 @@ function EmployeeIdPage() {
 
     exportAttendanceRecordsCSV(
       employee?.display_name || 'ไม่มีชื่อ',
-      employee?.user_id || 'export',
-      dashboardRecords
+      dashboardRecords,
+      dateRange?.from,
+      dateRange?.to
     );
   };
 
