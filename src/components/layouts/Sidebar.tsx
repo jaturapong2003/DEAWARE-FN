@@ -34,7 +34,14 @@ const AppSidebar: React.FC = () => {
     keycloak.hasResourceRole('admin', 'DFAWARF');
 
   const isActive = (path: string) => {
-    return location.pathname === path;
+    const current = location.pathname.replace(/\/+$/, '') || '/';
+    const target = path.replace(/\/+$/, '') || '/';
+
+    if (current === target) return true;
+    if (target === '/') return current === '/';
+    if (current.startsWith(`${target}/`)) return true;
+
+    return false;
   };
 
   return (
