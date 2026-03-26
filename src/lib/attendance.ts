@@ -6,11 +6,15 @@ export const normalizeImageType = (type: string | undefined): string =>
     .toLowerCase()
     .replace(/[\s-]+/g, '_');
 
-export const isCheckInImageType = (type: string): boolean =>
-  normalizeImageType(type) === 'check_in';
+export const isCheckInImageType = (type: string): boolean => {
+  const normalized = normalizeImageType(type);
+  return normalized === 'check_in' || normalized === 'checkin' || normalized === 'in';
+};
 
-export const isCheckOutImageType = (type: string): boolean =>
-  normalizeImageType(type) === 'check_out';
+export const isCheckOutImageType = (type: string): boolean => {
+  const normalized = normalizeImageType(type);
+  return normalized === 'check_out' || normalized === 'checkout' || normalized === 'out';
+};
 
 export const getAttendanceImageUrls = (record: {
   ImageAttendance?: ImageAttendance[];

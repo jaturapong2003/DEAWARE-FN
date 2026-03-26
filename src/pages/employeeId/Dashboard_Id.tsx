@@ -15,6 +15,7 @@ import {
   LogIn,
   LogOut,
   ImageIcon,
+  UserRound,
 } from 'lucide-react';
 import { useEmployeeAnalysis } from '@/hooks/useEmployeeAnalysis';
 import {
@@ -1173,7 +1174,7 @@ function DashboardId({
                                           maxHeight: 'calc(80vh - 80px)',
                                         }}
                                       >
-                                        <div className={`grid gap-4 pt-2 pb-8 ${checkOutImageUrl ? 'sm:grid-cols-2' : 'sm:grid-cols-1 max-w-sm mx-auto'}`}>
+                                        <div className="grid gap-4 pt-2 pb-8 sm:grid-cols-2">
                                           {/* รูปเข้างาน */}
                                           <div className="space-y-2">
                                             <div className="flex items-center gap-2">
@@ -1198,41 +1199,43 @@ function DashboardId({
                                                   />
                                                 ) : (
                                                   <div className="flex flex-col items-center gap-2">
-                                                    <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
-                                                    <span className="text-muted-foreground text-sm font-medium">
-                                                      ยังไม่มีรูปภาพ
-                                                    </span>
+                                                    <UserRound className="text-muted-foreground/30 h-16 w-16" strokeWidth={1} />
                                                   </div>
                                                 )}
                                               </div>
                                             </div>
                                           </div>
-                                          {/* รูปออกงาน — แสดงเฉพาะเมื่อมีรูป */}
-                                          {checkOutImageUrl && (
-                                            <div className="space-y-2">
-                                              <div className="flex items-center gap-2">
-                                                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-100 dark:bg-orange-950/30">
-                                                  <LogOut className="h-3.5 w-3.5 text-orange-600" />
-                                                </div>
-                                                <span className="text-sm font-semibold text-orange-600">
-                                                  รูปออกงาน
-                                                </span>
-                                                <span className="text-muted-foreground text-xs font-medium">
-                                                  {checkOutTime} น.
-                                                </span>
+
+                                          {/* รูปออกงาน */}
+                                          <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-100 dark:bg-orange-950/30">
+                                                <LogOut className="h-3.5 w-3.5 text-orange-600" />
                                               </div>
-                                              <div className="bg-muted overflow-hidden rounded-xl border">
-                                                <div className="flex aspect-square w-full items-center justify-center">
+                                              <span className="text-sm font-semibold text-orange-600">
+                                                รูปออกงาน
+                                              </span>
+                                              <span className="text-muted-foreground text-xs font-medium">
+                                                {rec.check_out ? `${checkOutTime} น.` : '- น.'}
+                                              </span>
+                                            </div>
+                                            <div className="bg-muted overflow-hidden rounded-xl border">
+                                              <div className="flex aspect-square w-full items-center justify-center">
+                                                {checkOutImageUrl ? (
                                                   <img
                                                     src={checkOutImageUrl}
                                                     alt="รูปออกงาน"
                                                     loading="lazy"
                                                     className="h-full w-full object-cover"
                                                   />
-                                                </div>
+                                                ) : (
+                                                  <div className="flex flex-col items-center gap-2">
+                                                    <UserRound className="text-muted-foreground/30 h-16 w-16" strokeWidth={1} />
+                                                  </div>
+                                                )}
                                               </div>
                                             </div>
-                                          )}
+                                          </div>
                                         </div>
                                       </ScrollArea>
                                     </DialogContent>

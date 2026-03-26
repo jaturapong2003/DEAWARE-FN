@@ -6,6 +6,7 @@ import {
   ImageIcon,
   LogIn,
   LogOut,
+  UserRound,
   XCircle,
 } from 'lucide-react';
 import { getAttendanceImageUrls } from '@/lib/attendance';
@@ -118,7 +119,7 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                   className="mt-4 w-full pr-4"
                   style={{ maxHeight: 'calc(85vh - 100px)' }}
                 >
-                  <div className={`grid gap-6 pt-2 pb-10 ${checkOutImageUrl ? 'sm:grid-cols-2' : 'sm:grid-cols-1 max-w-sm mx-auto'}`}>
+                  <div className="grid gap-6 pt-2 pb-10 sm:grid-cols-2">
                     {/* รูปเข้างาน */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
@@ -143,43 +144,45 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                             />
                           ) : (
                             <div className="flex flex-col items-center gap-2">
-                              <ImageIcon className="text-muted-foreground/40 h-12 w-12" />
-                              <span className="text-muted-foreground text-sm font-medium">
-                                ยังไม่มีรูปภาพ
-                              </span>
+                              <UserRound className="text-muted-foreground/30 h-16 w-16" strokeWidth={1} />
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
-                    {/* รูปออกงาน — แสดงเฉพาะเมื่อมีรูป */}
-                    {checkOutImageUrl && (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-100 dark:bg-orange-950/30">
-                            <LogOut className="h-3.5 w-3.5 text-orange-600" />
-                          </div>
-                          <span className="text-sm font-semibold text-orange-600">
-                            รูปออกงาน
-                          </span>
-                          <span className="text-muted-foreground text-xs font-medium">
-                            {record.check_out
-                              ? `${formatTime(record.check_out)} น.`
-                              : '-'}
-                          </span>
+
+                    {/* รูปออกงาน */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-100 dark:bg-orange-950/30">
+                          <LogOut className="h-3.5 w-3.5 text-orange-600" />
                         </div>
-                        <div className="bg-muted overflow-hidden rounded-xl border">
-                          <div className="flex aspect-square w-full items-center justify-center">
+                        <span className="text-sm font-semibold text-orange-600">
+                          รูปออกงาน
+                        </span>
+                        <span className="text-muted-foreground text-xs font-medium">
+                          {record.check_out
+                            ? `${formatTime(record.check_out)} น.`
+                            : '- น.'}
+                        </span>
+                      </div>
+                      <div className="bg-muted overflow-hidden rounded-xl border">
+                        <div className="flex aspect-square w-full items-center justify-center">
+                          {checkOutImageUrl ? (
                             <img
                               src={checkOutImageUrl}
                               alt="รูปออกงาน"
                               loading="lazy"
                               className="h-full w-full object-cover"
                             />
-                          </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2">
+                              <UserRound className="text-muted-foreground/30 h-16 w-16" strokeWidth={1} />
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </ScrollArea>
               </DialogContent>
