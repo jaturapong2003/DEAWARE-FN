@@ -28,14 +28,13 @@ export const getAttendanceImageUrls = (record: {
   const checkOutImage = images.find((img) =>
     isCheckOutImageType(img.ImageType ?? img.image_type ?? '')
   );
-  const firstImage = images[0];
-  const lastImage = images.at(-1) ?? firstImage;
 
   return {
     checkInImageUrl:
       checkInImage?.ImageURL ?? checkInImage?.image_url ?? null,
+    // ไม่ fallback ไป lastImage เพราะจะทำให้รูป check-in ถูกแสดงในฝั่ง check-out
     checkOutImageUrl:
-      checkOutImage?.ImageURL ?? checkOutImage?.image_url ?? lastImage?.ImageURL ?? lastImage?.image_url ?? null,
+      checkOutImage?.ImageURL ?? checkOutImage?.image_url ?? null,
   };
 };
 
