@@ -6,6 +6,11 @@ import { fetchWithAuth } from '@/config/fetctWithAuth';
 import apiClient from '@/lib/apiClient';
 import useAuthStore from '@/stores/authStore';
 import toast from 'react-hot-toast';
+
+type UploadFaceResponse = {
+  message?: string;
+  id?: string;
+};
 import {
   ImageIcon,
   Settings,
@@ -172,27 +177,55 @@ export default function SettingContent({ open, onClose }: Props) {
   });
 
   const uploadFaceImagesMutation = useMutation({
-    mutationFn: async (): Promise<{ message?: string }> => {
+    mutationFn: async (): Promise<UploadFaceResponse> => {
+      if (faceFiles.length === 0) {
+        throw new Error('API Error: 400');
+      }
+
       const formData = new FormData();
       faceFiles.forEach((file) => formData.append('face_image', file));
-      return (await fetchWithAuth('/api/employee/upload-face', {
-        method: 'POST',
-        body: formData,
-      })) as { message?: string };
+
+      const result = await fetchWithAuth<UploadFaceResponse>(
+        '/api/employee/upload-face',
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      return result;
     },
     onSuccess: async (data) => {
       setFaceFiles([]);
-      toast.success(data?.message || 'อัปโหลดรูปใบหน้าสำเร็จ');
+      const message = data?.message || 'บันทึกใบหน้าเรียบร้อยแล้ว';
+      toast.success(message);
+
+      if (data?.id) {
+        console.debug('face embedding id:', data.id);
+      }
 
       const response = await apiClient.get('/employee/me');
       const backendData = response.data as { face_embedding_count?: number };
       setFaceEmbeddingCount(backendData.face_embedding_count ?? 0);
 
-      // no store updates needed, keep local state and keycloak-managed flow
+      useAuthStore.getState().setAccountInfo(response.data);
     },
     onError: (err: unknown) => {
-      const message =
-        err instanceof Error ? err.message : 'อัปโหลดรูปใบหน้าล้มเหลว';
+      let message = 'อัปโหลดรูปใบหน้าล้มเหลว';
+
+      if (err instanceof Error) {
+        if (err.message.includes('API Error: 401')) {
+          message = 'Token ไม่ถูกต้อง';
+        } else if (err.message.includes('API Error: 400')) {
+          message = 'ไม่พบพนักงาน หรือ กรุณาอัปโหลดรูปภาพ';
+        } else if (err.message.includes('API Error: 500')) {
+          message =
+            'AI ประมวลผลล้มเหลว หรือ บันทึกข้อมูลล้มเหลว ตรวจสอบ frontend หน่อย';
+        } else {
+          message = err.message;
+        }
+      }
+
       toast.error(message);
     },
   });
