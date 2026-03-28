@@ -11,6 +11,7 @@ import { navigationItems } from '@/lib/itemMenu';
 import { useTheme } from '@/hooks/useTheme';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import LiveActivityFeed from './Livedata';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -39,24 +40,27 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 'DEAWARE'}
             </h1>
 
-            {/* ปุ่มสลับ Dark/Light Mode */}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleTheme}
-              className="cursor-pointer h-8 w-8 rounded-lg text-muted-foreground bg-foreground/5 hover:bg-foreground/10"
-              title={
-                theme === 'dark'
-                  ? 'เปลี่ยนเป็น Light Mode'
-                  : 'เปลี่ยนเป็น Dark Mode'
-              }
-            >
-              {theme === 'dark' ? (
-                <Sun className="h-4 w-4 text-yellow-400" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <LiveActivityFeed />
+              {/* ปุ่มสลับ Dark/Light Mode */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleTheme}
+                className="cursor-pointer h-12 w-12 rounded-xl text-muted-foreground bg-foreground/5 hover:bg-foreground/10 border-white/20 backdrop-blur-md shadow-lg transition-all duration-300"
+                title={
+                  theme === 'dark'
+                    ? 'เปลี่ยนเป็น Light Mode'
+                    : 'เปลี่ยนเป็น Dark Mode'
+                }
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-6 w-6 text-yellow-400" />
+                ) : (
+                  <Moon className="h-6 w-6" />
+                )}
+              </Button>
+            </div>
           </div>
         </header>
 
