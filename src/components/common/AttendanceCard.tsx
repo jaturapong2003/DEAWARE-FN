@@ -140,7 +140,7 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                               src={checkInImageUrl}
                               alt="รูปเข้างาน"
                               loading="lazy"
-                              className="h-full w-full object-cover"
+                              className="h-full w-full object-contain"
                             />
                           ) : (
                             <div className="flex flex-col items-center gap-2">
@@ -173,7 +173,7 @@ const AttendanceCard: React.FC<{ record: AttendanceRecord }> = ({ record }) => {
                               src={checkOutImageUrl}
                               alt="รูปออกงาน"
                               loading="lazy"
-                              className="h-full w-full object-cover"
+                              className="h-full w-full object-contain"
                             />
                           ) : (
                             <div className="flex flex-col items-center gap-2">
