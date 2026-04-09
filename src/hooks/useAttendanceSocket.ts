@@ -38,7 +38,7 @@ export const useAttendanceSocket = () => {
     // 2. กำหนด WebSocket URL
     const wsUrl = import.meta.env.VITE_WS_URL || 
                  (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + 
-                 window.location.host + '/ws/attendance';
+                 window.location.host + '/ws';
 
     // 3. เริ่มการเชื่อมต่อ
     const connect = () => {
